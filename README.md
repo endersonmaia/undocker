@@ -8,7 +8,7 @@ Why?
 
 Docker images became a popular way to distribute applications with their
 dependencies. However, Docker itself is not the best runtime environment. At
-least not for everyone.
+least not for everyone. May boring technology run our software.
 
 Undocker bridges the gap between application images (in docker image format)
 and container runtimes: now you can run a Docker image with old-fashioned
