@@ -6,8 +6,8 @@ import (
 	"io"
 	"os"
 
-	goflags "github.com/jessevdk/go-flags"
 	"git.sr.ht/~motiejus/code/undocker/rootfs"
+	goflags "github.com/jessevdk/go-flags"
 )
 
 const _description = "Flatten a docker container image to a tarball"
@@ -18,8 +18,8 @@ type Command struct {
 	Stdout    io.Writer
 
 	PositionalArgs struct {
-		Infile  goflags.Filename `long:"infile" desc:"Input tarball"`
-		Outfile string           `long:"outfile" desc:"Output path, stdout is '-'"`
+		Infile  goflags.Filename `long:"infile" description:"Input tarball"`
+		Outfile string           `long:"outfile" description:"Output path, stdout is '-'"`
 	} `positional-args:"yes" required:"yes"`
 }
 
