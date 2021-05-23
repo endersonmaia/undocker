@@ -9,6 +9,7 @@ go_library(
     visibility = ["//visibility:private"],
     deps = [
         "//src/undocker/internal/cmdlxcconfig:go_default_library",
+        "//src/undocker/internal/cmdmanpage:go_default_library",
         "//src/undocker/internal/cmdrootfs:go_default_library",
         "@com_github_jessevdk_go_flags//:go_default_library",
     ],
