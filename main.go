@@ -4,7 +4,6 @@ import (
 	"os"
 
 	goflags "github.com/jessevdk/go-flags"
-
 	"github.com/motiejus/code/undocker/internal/cmdlxcconfig"
 	"github.com/motiejus/code/undocker/internal/cmdrootfs"
 )

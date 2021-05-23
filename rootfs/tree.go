@@ -31,10 +31,10 @@ func (t *tree) Add(path string) {
 
 // HasPrefix returns if tree contains a prefix matching a given sequence.
 // Search algorithm is naive: it does linear search when going through the
-// nodes instead of binary-search. Since we expect number of children to be
-// really small (usually 1 or 2), it does not really matter. If you find a
-// real-world container with 30+ whiteout paths on a single path, please ping
-// the author/maintainer of this code.
+// nodes, whereas binary search would work here too. Since we expect number of
+// children to be really small (usually 1 or 2), it does not really matter. If
+// you find a real-world container with 30+ whiteout paths on a single path, it
+// may make sense to replace the algorithm.
 func (t *tree) HasPrefix(path string) bool {
 	return t.hasprefix(strings.Split(filepath.Clean(path), "/"))
 }

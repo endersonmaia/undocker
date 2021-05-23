@@ -61,7 +61,7 @@ func (c *Command) Execute(args []string) (err error) {
 			return fmt.Errorf("create: %w", err)
 		}
 		defer func() {
-			err1 = outf.Close()
+			err1 := outf.Close()
 			if err == nil {
 				err = err1
 			}
