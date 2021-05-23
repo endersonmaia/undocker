@@ -3,7 +3,6 @@ package rootfs
 import (
 	"archive/tar"
 	"encoding/json"
-	"fmt"
 	"io"
 	"strings"
 )
@@ -50,12 +49,12 @@ func RootFS(in io.ReadSeeker, out io.Writer) error {
 		case hdr.Name == _manifestJSON:
 			dec := json.NewDecoder(tr)
 			if err := dec.Decode(&manifest); err != nil {
-				return fmt.Errorf("decode manifest.json: %w", err)
+				return err
 			}
 		case strings.HasSuffix(hdr.Name, "/layer.tar"):
 			here, err := in.Seek(0, io.SeekCurrent)
 			if err != nil {
-				return fmt.Errorf("seek: %w", err)
+				return err
 			}
 			layerOffsets[hdr.Name] = here
 		}
@@ -74,7 +73,7 @@ func RootFS(in io.ReadSeeker, out io.Writer) error {
 	// for all kinds of files.
 	for i, offset := range layers {
 		if _, err := in.Seek(offset, io.SeekStart); err != nil {
-			fmt.Errorf("seek: %w", err)
+			return err
 		}
 		tr = tar.NewReader(in)
 
@@ -83,6 +82,9 @@ func RootFS(in io.ReadSeeker, out io.Writer) error {
 			if err == io.EOF {
 				break
 			}
+			if err != nil {
+				return err
+			}
 			file2layer[hdr.Name] = i
 		}
 	}
@@ -90,7 +92,7 @@ func RootFS(in io.ReadSeeker, out io.Writer) error {
 	// phase 3: iterate through all layers and write files.
 	for i, offset := range layers {
 		if _, err := in.Seek(offset, io.SeekStart); err != nil {
-			fmt.Errorf("seek: %w", err)
+			return err
 		}
 		tr = tar.NewReader(in)
 
@@ -98,6 +100,9 @@ func RootFS(in io.ReadSeeker, out io.Writer) error {
 			hdr, err := tr.Next()
 			if err == io.EOF {
 				break
+			}
+			if err != nil {
+				return err
 			}
 			if file2layer[hdr.Name] != i {
 				continue

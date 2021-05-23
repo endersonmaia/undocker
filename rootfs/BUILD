@@ -8,4 +8,8 @@ go_library(
     ],
     importpath = "github.com/motiejus/code/undocker/rootfs",
     visibility = ["//visibility:public"],
+    deps = [
+        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//require",
+    ],
 )
