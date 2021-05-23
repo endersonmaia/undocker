@@ -10,7 +10,10 @@ def _rootfs_impl(ctx):
             outf,
         ],
     )
-    return [DefaultInfo(files = depset([out]))]
+    return [DefaultInfo(
+            files = depset([out]),
+            runfiles = ctx.runfiles(files = ctx.attr.src.files.to_list())
+    )]
 
 rootfs = rule(
     doc = "Generate a rootfs from a docker container image",
