@@ -24,13 +24,22 @@ go_binary(
     visibility = ["//visibility:public"],
 )
 
+genrule(
+    name = "alpine-rootfs",
+    srcs = ["@alpine//image:image"],
+    outs = ["alpine-rootfs.tar"],
+    cmd = "$(location :undocker) rootfs $< $@",
+    tools = [":undocker"],
+)
+
+# later debugging
 pkg_tar(
     name = "alpine-container-plus",
     deps = ["@alpine//image:image"],
 )
 
 rootfs(
-    name = "alpine-rootfs",
+    name = "alpine-rootfs2",
     #src = "@alpine//image:image",
     src = ":alpine-container-plus",
 )
