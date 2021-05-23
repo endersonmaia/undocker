@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/motiejus/code/undocker/internal/tartest"
+	"git.sr.ht/~motiejus/code/undocker/internal/tartest"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

@@ -7,7 +7,7 @@ import (
 	"os"
 
 	goflags "github.com/jessevdk/go-flags"
-	"github.com/motiejus/code/undocker/rootfs"
+	"git.sr.ht/~motiejus/code/undocker/rootfs"
 )
 
 const _description = "Flatten a docker container image to a tarball"

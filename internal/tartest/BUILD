@@ -3,7 +3,7 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 go_library(
     name = "go_default_library",
     srcs = ["tartest.go"],
-    importpath = "github.com/motiejus/code/undocker/internal/tartest",
+    importpath = "git.sr.ht/~motiejus/code/undocker/internal/tartest",
     visibility = ["//visibility:public"],
     deps = ["@com_github_stretchr_testify//require:go_default_library"],
 )

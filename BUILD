@@ -5,7 +5,7 @@ load("@io_bazel_rules_docker//container:container.bzl", "container_bundle")
 go_library(
     name = "go_default_library",
     srcs = ["main.go"],
-    importpath = "github.com/motiejus/code/undocker",
+    importpath = "git.sr.ht/~motiejus/code/undocker",
     visibility = ["//visibility:private"],
     deps = [
         "//src/undocker/internal/cmdlxcconfig:go_default_library",

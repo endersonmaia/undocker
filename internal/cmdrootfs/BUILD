@@ -3,7 +3,7 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 go_library(
     name = "go_default_library",
     srcs = ["cmdrootfs.go"],
-    importpath = "github.com/motiejus/code/undocker/internal/cmdrootfs",
+    importpath = "git.sr.ht/~motiejus/code/undocker/internal/cmdrootfs",
     visibility = ["//src/undocker:__subpackages__"],
     deps = [
         "//src/undocker/rootfs:go_default_library",

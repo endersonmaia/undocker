@@ -4,9 +4,9 @@ import (
 	"os"
 
 	goflags "github.com/jessevdk/go-flags"
-	"github.com/motiejus/code/undocker/internal/cmdlxcconfig"
-	"github.com/motiejus/code/undocker/internal/cmdmanpage"
-	"github.com/motiejus/code/undocker/internal/cmdrootfs"
+	"git.sr.ht/~motiejus/code/undocker/internal/cmdlxcconfig"
+	"git.sr.ht/~motiejus/code/undocker/internal/cmdmanpage"
+	"git.sr.ht/~motiejus/code/undocker/internal/cmdrootfs"
 )
 
 func main() {

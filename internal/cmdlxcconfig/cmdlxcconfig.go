@@ -7,7 +7,7 @@ import (
 	"os"
 
 	goflags "github.com/jessevdk/go-flags"
-	"github.com/motiejus/code/undocker/lxcconfig"
+	"git.sr.ht/~motiejus/code/undocker/lxcconfig"
 )
 
 const _description = "Create an LXC-compatible container configuration"

@@ -7,7 +7,7 @@ go_library(
         "rootfs.go",
         "tree.go",
     ],
-    importpath = "github.com/motiejus/code/undocker/rootfs",
+    importpath = "git.sr.ht/~motiejus/code/undocker/rootfs",
     visibility = ["//visibility:public"],
 )
 
