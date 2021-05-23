@@ -40,23 +40,26 @@ func (c *Command) Execute(args []string) (err error) {
 	}
 	defer func() { err = multierr.Append(err, rd.Close()) }()
 
-	var out io.WriteCloser
-	outf := string(c.PositionalArgs.Outfile)
-	if outf == "-" {
-		out = os.Stdout
+	var out io.Writer
+	var outf *os.File
+	if fname := string(c.PositionalArgs.Outfile); fname == "-" {
+		outf = os.Stdout
 	} else {
-		out, err = os.Create(outf)
+		outf, err = os.Create(fname)
 		if err != nil {
 			return err
 		}
 	}
-	defer func() { err = multierr.Append(err, out.Close()) }()
+	out = outf
+	defer func() { err = multierr.Append(err, outf.Close()) }()
 
 	if c.Xz {
-		if out, err = xz.NewWriter(out); err != nil {
+		outz, err := xz.NewWriter(out)
+		if err != nil {
 			return err
 		}
-		defer func() { err = multierr.Append(err, out.Close()) }()
+		defer func() { err = multierr.Append(err, outz.Close()) }()
+		out = outz
 	}
 
 	if _, err := c.rootfsNew(rd).WriteTo(out); err != nil {
