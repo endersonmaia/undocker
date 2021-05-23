@@ -1,9 +1,11 @@
 package main
 
 import (
+	"errors"
 	"os"
 
 	goflags "github.com/jessevdk/go-flags"
+	"github.com/motiejus/code/undocker/rootfs"
 )
 
 type (
@@ -30,4 +32,30 @@ func run(args []string) error {
 	}
 
 	return nil
+}
+
+type cmdRootFS struct {
+	PositionalArgs struct {
+		Infile  goflags.Filename `long:"infile" description:"Input tarball"`
+		Outfile string           `long:"outfile" description:"Output tarball (flattened file system)"`
+	} `positional-args:"yes" required:"yes"`
+}
+
+func (r *cmdRootFS) Execute(args []string) error {
+	if len(args) != 0 {
+		return errors.New("too many args")
+	}
+
+	in, err := os.Open(string(r.PositionalArgs.Infile))
+	if err != nil {
+		return err
+	}
+	defer in.Close()
+
+	out, err := os.Create(string(r.PositionalArgs.Outfile))
+	if err != nil {
+		return err
+	}
+	defer out.Close()
+	return rootfs.Rootfs(in, out)
 }

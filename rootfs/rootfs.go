@@ -1,53 +1,23 @@
-package main
+package rootfs
 
 import (
 	"archive/tar"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
-	"os"
 	"strings"
-
-	goflags "github.com/jessevdk/go-flags"
 )
-
-type cmdRootFS struct {
-	PositionalArgs struct {
-		Infile  goflags.Filename `long:"infile" description:"Input tarball"`
-		Outfile string           `long:"outfile" description:"Output tarball (flattened file system)"`
-	} `positional-args:"yes" required:"yes"`
-}
 
 const (
 	_manifestJSON = "manifest.json"
 )
-
-func (r *cmdRootFS) Execute(args []string) error {
-	if len(args) != 0 {
-		return errors.New("too many args")
-	}
-
-	in, err := os.Open(string(r.PositionalArgs.Infile))
-	if err != nil {
-		return err
-	}
-	defer in.Close()
-
-	out, err := os.Create(string(r.PositionalArgs.Outfile))
-	if err != nil {
-		return err
-	}
-	defer out.Close()
-	return r.rootfs(in, out)
-}
 
 type dockerManifestJSON []struct {
 	Config string   `json:"Config"`
 	Layers []string `json:"Layers"`
 }
 
-// rootfs accepts a docker layer tarball and writes it to outfile.
+// Rootfs accepts a docker layer tarball and writes it to outfile.
 // 1. create map[string]io.ReadSeeker for each layer.
 // 2. parse manifest.json and get the layer order.
 // 3. go through each layer in order and write:
@@ -56,7 +26,7 @@ type dockerManifestJSON []struct {
 //       I) layer name
 //       II) offset (0 being the first file in the layer)
 // 4. go through
-func (r *cmdRootFS) rootfs(in io.ReadSeeker, out io.Writer) error {
+func Rootfs(in io.ReadSeeker, out io.Writer) error {
 	tr := tar.NewReader(in)
 	tw := tar.NewWriter(out)
 	// layerOffsets maps a layer name (a9b123c0daa/layer.tar) to it's offset
@@ -88,7 +58,6 @@ func (r *cmdRootFS) rootfs(in io.ReadSeeker, out io.Writer) error {
 				return fmt.Errorf("seek: %w", err)
 			}
 			layerOffsets[hdr.Name] = here
-			//fmt.Printf("%s\t%x\n", hdr.Name, here)
 		}
 	}
 
