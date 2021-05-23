@@ -4,16 +4,15 @@ import (
 	"os"
 
 	goflags "github.com/jessevdk/go-flags"
+	"github.com/motiejus/code/undocker/internal/cmdlxcconfig"
 	"github.com/motiejus/code/undocker/internal/cmdrootfs"
 )
 
 type (
 	params struct {
-		RootFS   cmdrootfs.CmdRootFS `command:"rootfs" description:"Unpack a docker container image to a single filesystem tarball"`
-		Manifest cmdManifest         `command:"manifest"`
+		RootFS    cmdrootfs.Command    `command:"rootfs" description:"Unpack a docker container image to a single filesystem tarball"`
+		LXCConfig cmdlxcconfig.Command `command:"lxcconfig" description:"Create an LXC-compatible container configuration"`
 	}
-
-	cmdManifest struct{} // stub
 )
 
 func main() {

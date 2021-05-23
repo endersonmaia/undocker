@@ -1,15 +1,15 @@
-package cmdrootfs
+package cmdlxcconfig
 
 import (
 	"errors"
 	"os"
 
 	goflags "github.com/jessevdk/go-flags"
-	"github.com/motiejus/code/undocker/rootfs"
+	"github.com/motiejus/code/undocker/lxcconfig"
 	"go.uber.org/multierr"
 )
 
-// Command is "rootfs" command
+// Command is "lxcconfig" command
 type Command struct {
 	PositionalArgs struct {
 		Infile  goflags.Filename `long:"infile" description:"Input tarball"`
@@ -17,7 +17,7 @@ type Command struct {
 	} `positional-args:"yes" required:"yes"`
 }
 
-// Execute executes rootfs Command
+// Execute executes lxcconfig Command
 func (c *Command) Execute(args []string) (err error) {
 	if len(args) != 0 {
 		return errors.New("too many args")
@@ -41,5 +41,5 @@ func (c *Command) Execute(args []string) (err error) {
 	}
 	defer func() { err = multierr.Append(err, out.Close()) }()
 
-	return rootfs.New(rd).WriteTo(out)
+	return lxcconfig.LXCConfig(rd, out)
 }
