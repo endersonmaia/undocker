@@ -91,13 +91,13 @@ func TestRootFS(t *testing.T) {
 			name: "whiteout with override",
 			image: tarball{
 				file{name: "layer0/layer.tar", contents: tarball{
-					file{name: "filea", contents: bytes.NewBufferString("from 0")},
+					file{name: "file", contents: bytes.NewBufferString("from 0")},
 				}},
 				file{name: "layer1/layer.tar", contents: tarball{
-					hardlink{name: ".wh.filea"},
+					hardlink{name: ".wh.file"},
 				}},
 				file{name: "layer2/layer.tar", contents: tarball{
-					file{name: "filea", contents: bytes.NewBufferString("from 3")},
+					file{name: "file", contents: bytes.NewBufferString("from 3")},
 				}},
 				manifest{
 					"layer0/layer.tar",
@@ -106,7 +106,7 @@ func TestRootFS(t *testing.T) {
 				},
 			},
 			want: []extractable{
-				file{name: "filea", contents: bytes.NewBufferString("from 3")},
+				file{name: "file", contents: bytes.NewBufferString("from 3")},
 			},
 		},
 		{
@@ -115,17 +115,39 @@ func TestRootFS(t *testing.T) {
 				file{name: "layer0/layer.tar", contents: tarball{
 					dir{name: "dir"},
 					file{name: "file"},
+					file{name: ".wh..wh..opq", uid: 0},
 				}},
 				file{name: "layer1/layer.tar", contents: tarball{
 					dir{name: ".wh.dir"},
 					file{name: ".wh.file"},
+					file{name: ".wh..wh..opq", uid: 1},
 				}},
+				manifest{"layer0/layer.tar", "layer1/layer.tar"},
 			},
 			want: []extractable{
 				dir{name: "dir"},
 				dir{name: ".wh.dir"},
 				file{name: "file"},
 				file{name: ".wh.file"},
+				file{name: ".wh..wh..opq", uid: 1},
+			},
+		},
+		{
+			name: "simple readdir whiteout",
+			image: tarball{
+				file{name: "layer0/layer.tar", contents: tarball{
+					dir{name: "a"},
+					file{name: "a/filea"},
+				}},
+				file{name: "layer1/layer.tar", contents: tarball{
+					file{name: "a/fileb"},
+					hardlink{name: "a/.wh..wh..opq"},
+				}},
+				manifest{"layer0/layer.tar", "layer1/layer.tar"},
+			},
+			want: []extractable{
+				dir{name: "a"},
+				file{name: "a/fileb"},
 			},
 		},
 	}
