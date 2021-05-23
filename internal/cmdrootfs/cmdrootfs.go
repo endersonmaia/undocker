@@ -21,11 +21,11 @@ func (r *CmdRootFS) Execute(args []string) (err error) {
 		return errors.New("too many args")
 	}
 
-	in, err := os.Open(string(r.PositionalArgs.Infile))
+	rd, err := os.Open(string(r.PositionalArgs.Infile))
 	if err != nil {
 		return err
 	}
-	defer func() { err = multierr.Append(err, in.Close()) }()
+	defer func() { err = multierr.Append(err, rd.Close()) }()
 
 	var out *os.File
 	outf := string(r.PositionalArgs.Outfile)
@@ -39,5 +39,5 @@ func (r *CmdRootFS) Execute(args []string) (err error) {
 	}
 	defer func() { err = multierr.Append(err, out.Close()) }()
 
-	return rootfs.RootFS(in, out)
+	return rootfs.New(rd).WriteTo(out)
 }

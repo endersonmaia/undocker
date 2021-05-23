@@ -27,17 +27,19 @@ type dockerManifestJSON []struct {
 	Layers []string `json:"Layers"`
 }
 
-// RootFS accepts a docker layer tarball and writes it to outfile.
-// 1. create map[string]io.ReadSeeker for each layer.
-// 2. parse manifest.json and get the layer order.
-// 3. go through each layer in order and write:
-//    a) to an ordered slice: the file name.
-//    b) to an FS map: where does the file come from?
-//       I) layer name
-//       II) offset (0 being the first file in the layer)
-// 4. go through
-func RootFS(in io.ReadSeeker, wr io.Writer) (err error) {
-	tr := tar.NewReader(in)
+// RootFS accepts a docker layer tarball and flattens it.
+type RootFS struct {
+	rd io.ReadSeeker
+}
+
+// New creates a new RootFS'er.
+func New(rd io.ReadSeeker) *RootFS {
+	return &RootFS{rd: rd}
+}
+
+// WriteTo writes a docker image to an open tarball.
+func (r *RootFS) WriteTo(wr io.Writer) (err error) {
+	tr := tar.NewReader(r.rd)
 	tw := tar.NewWriter(wr)
 	defer func() { err = multierr.Append(err, tw.Close()) }()
 
@@ -63,7 +65,7 @@ func RootFS(in io.ReadSeeker, wr io.Writer) (err error) {
 				return fmt.Errorf("decode %s: %w", _manifestJSON, err)
 			}
 		case strings.HasSuffix(hdr.Name, _layerSuffix):
-			here, err := in.Seek(0, io.SeekCurrent)
+			here, err := r.rd.Seek(0, io.SeekCurrent)
 			if err != nil {
 				return err
 			}
@@ -93,10 +95,10 @@ func RootFS(in io.ReadSeeker, wr io.Writer) (err error) {
 
 	// iterate over all files, construct `file2layer`, `whreaddir`, `wh`
 	for i, offset := range layers {
-		if _, err := in.Seek(offset, io.SeekStart); err != nil {
+		if _, err := r.rd.Seek(offset, io.SeekStart); err != nil {
 			return err
 		}
-		tr = tar.NewReader(in)
+		tr = tar.NewReader(r.rd)
 		for {
 			hdr, err := tr.Next()
 			if err == io.EOF {
@@ -134,10 +136,10 @@ func RootFS(in io.ReadSeeker, wr io.Writer) (err error) {
 
 	// iterate through all layers, all files, and write files.
 	for i, offset := range layers {
-		if _, err := in.Seek(offset, io.SeekStart); err != nil {
+		if _, err := r.rd.Seek(offset, io.SeekStart); err != nil {
 			return err
 		}
-		tr = tar.NewReader(in)
+		tr = tar.NewReader(r.rd)
 		for {
 			hdr, err := tr.Next()
 			if err == io.EOF {

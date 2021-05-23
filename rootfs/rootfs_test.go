@@ -177,7 +177,7 @@ func TestRootFS(t *testing.T) {
 			in := bytes.NewReader(tt.image.Bytes())
 			out := bytes.Buffer{}
 
-			err := RootFS(in, &out)
+			err := New(in).WriteTo(&out)
 			if tt.wantErr != "" {
 				assert.EqualError(t, err, tt.wantErr)
 				return
