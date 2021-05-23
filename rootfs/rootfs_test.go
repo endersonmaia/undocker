@@ -11,19 +11,23 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-type layers []string
-
-func (l layers) bytes() []byte {
-	dockerManifest := dockerManifestJSON{{Layers: l}}
-	b, err := json.Marshal(dockerManifest)
-	if err != nil {
-		panic("panic in a unit test")
-	}
-	return b
+type tarrable interface {
+	tar(*testing.T, *tar.Writer)
 }
 
-type tarrable interface {
-	tar(*tar.Writer)
+type dir struct {
+	name string
+	uid  int
+}
+
+func (d dir) tar(t *testing.T, tw *tar.Writer) {
+	t.Helper()
+	hdr := &tar.Header{
+		Typeflag: tar.TypeDir,
+		Name:     d.name,
+		Uid:      d.uid,
+	}
+	require.NoError(t, tw.WriteHeader(hdr))
 }
 
 type file struct {
@@ -32,31 +36,39 @@ type file struct {
 	contents []byte
 }
 
-func (f file) tar(tw *tar.Writer) {
-	hdr := &tar.Header{Typeflag: tar.TypeReg, Uid: f.uid}
-	tw.WriteHeader(hdr)
-	tw.Write(f.contents)
+func (f file) tar(t *testing.T, tw *tar.Writer) {
+	t.Helper()
+	hdr := &tar.Header{
+		Typeflag: tar.TypeReg,
+		Name:     f.name,
+		Uid:      f.uid,
+		Size:     int64(len(f.contents)),
+	}
+	require.NoError(t, tw.WriteHeader(hdr))
+	_, err := tw.Write(f.contents)
+	require.NoError(t, err)
 }
 
-type dir struct {
-	name string
-	uid  int
-}
+type manifest []string
 
-func (f dir) tar(tw *tar.Writer) {
-	hdr := &tar.Header{Typeflag: tar.TypeDir, Uid: f.uid}
-	tw.WriteHeader(hdr)
+func (m manifest) tar(t *testing.T, tw *tar.Writer) {
+	t.Helper()
+	b, err := json.Marshal(dockerManifestJSON{{Layers: m}})
+	require.NoError(t, err)
+	file{name: "manifest.json", uid: 0, contents: b}.tar(t, tw)
 }
 
 type tarball []tarrable
 
-func (t tarball) bytes() []byte {
+func (tb tarball) bytes(t *testing.T) []byte {
+	t.Helper()
+
 	buf := bytes.Buffer{}
 	tw := tar.NewWriter(&buf)
-	for _, member := range t {
-		member.tar(tw)
+	for _, member := range tb {
+		member.tar(t, tw)
 	}
-	tw.Close()
+	require.NoError(t, tw.Close())
 	return buf.Bytes()
 }
 
@@ -81,28 +93,23 @@ func extract(t *testing.T, tarball io.Reader) []file {
 	return ret
 }
 
-var (
-	_layer0 = tarball{
+func TestRootFS(t *testing.T) {
+	_layer0 := tarball{
 		dir{name: "/", uid: 0},
 		file{name: "/file", uid: 1, contents: []byte("from 0")},
 	}
 
-	_layer1 = tarball{
+	_layer1 := tarball{
 		dir{name: "/", uid: 1},
 		file{name: "/file", uid: 0, contents: []byte("from 1")},
 	}
 
-	_image = tarball{
-		file{name: "layer1/layer.tar", contents: _layer1.bytes()},
-		file{name: "layer0/layer.tar", contents: _layer0.bytes()},
-		file{
-			name:     "manifest.json",
-			contents: layers{"layer0/layer.tar", "layer1/layer0.tar"}.bytes(),
-		},
+	_image := tarball{
+		file{name: "layer1/layer.tar", contents: _layer1.bytes(t)},
+		file{name: "layer0/layer.tar", contents: _layer0.bytes(t)},
+		manifest{"layer0/layer0.tar", "layer1/layer.tar"},
 	}
-)
 
-func TestRootFS(t *testing.T) {
 	tests := []struct {
 		name  string
 		image tarball
@@ -110,7 +117,7 @@ func TestRootFS(t *testing.T) {
 	}{
 		{
 			name:  "empty",
-			image: tarball{},
+			image: tarball{manifest{}},
 			want:  []file{},
 		},
 		{
@@ -123,11 +130,9 @@ func TestRootFS(t *testing.T) {
 		},
 	}
 
-	assert.Fail(t, "foo")
-
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			in := bytes.NewReader(tt.image.bytes())
+			in := bytes.NewReader(tt.image.bytes(t))
 			out := bytes.Buffer{}
 
 			require.NoError(t, RootFS(in, &out))

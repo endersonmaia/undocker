@@ -1,10 +1,11 @@
 load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 
 go_library(
-    name = "rootfs_lib",
+    name = "go_default_library",
     srcs = ["rootfs.go"],
     importpath = "github.com/motiejus/code/undocker/rootfs",
     visibility = ["//visibility:public"],
+    deps = ["@org_uber_go_multierr//:go_default_library"],
 )
 
 go_test(

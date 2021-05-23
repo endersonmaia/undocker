@@ -6,7 +6,7 @@ go_library(
     importpath = "github.com/motiejus/code/undocker",
     visibility = ["//visibility:private"],
     deps = [
-        "//src/undocker/rootfs:rootfs_lib",
+        "//src/undocker/rootfs:go_default_library",
         "@com_github_jessevdk_go_flags//:go_default_library",
     ],
 )

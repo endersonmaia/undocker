@@ -3,16 +3,24 @@ package rootfs
 import (
 	"archive/tar"
 	"encoding/json"
+	"errors"
 	"io"
+	"path/filepath"
 	"strings"
+
+	"go.uber.org/multierr"
 )
 
 const (
 	_manifestJSON = "manifest.json"
 )
 
+var (
+	ErrBadManifest = errors.New("bad or missing manifest.json")
+)
+
 type dockerManifestJSON []struct {
-	Config string   `json:"Config"`
+	Config string   `json:"Config,omitempty"`
 	Layers []string `json:"Layers"`
 }
 
@@ -25,9 +33,12 @@ type dockerManifestJSON []struct {
 //       I) layer name
 //       II) offset (0 being the first file in the layer)
 // 4. go through
-func RootFS(in io.ReadSeeker, out io.Writer) error {
+func RootFS(in io.ReadSeeker, out io.Writer) (err error) {
 	tr := tar.NewReader(in)
 	tw := tar.NewWriter(out)
+	defer func() {
+		err = multierr.Append(err, tw.Close())
+	}()
 	// layerOffsets maps a layer name (a9b123c0daa/layer.tar) to it's offset
 	layerOffsets := map[string]int64{}
 
@@ -46,7 +57,7 @@ func RootFS(in io.ReadSeeker, out io.Writer) error {
 		}
 
 		switch {
-		case hdr.Name == _manifestJSON:
+		case filepath.Clean(hdr.Name) == _manifestJSON:
 			dec := json.NewDecoder(tr)
 			if err := dec.Decode(&manifest); err != nil {
 				return err
@@ -58,6 +69,10 @@ func RootFS(in io.ReadSeeker, out io.Writer) error {
 			}
 			layerOffsets[hdr.Name] = here
 		}
+	}
+
+	if len(manifest) == 0 {
+		return ErrBadManifest
 	}
 
 	// phase 1.5: enumerate layers
@@ -136,5 +151,5 @@ func RootFS(in io.ReadSeeker, out io.Writer) error {
 		}
 	}
 
-	return tw.Close()
+	return nil
 }
