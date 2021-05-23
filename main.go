@@ -1,19 +1,20 @@
 package main
 
 import (
-	"fmt"
 	"os"
-	"errors"
 
 	goflags "github.com/jessevdk/go-flags"
 )
 
-type opts struct {
-	PositionalArgs struct {
-		Infile     goflags.Filename `long:"infile" description:"Docker container tarball"`
-		Outfile string           `long:"outfile" description:"Output tarball"`
-	} `positional-args:"yes" required:"yes"`
-}
+type (
+	params struct {
+		RootFS   cmdRootFS   `command:"rootfs" description:"Unpack a docker container image to a single filesystem tarball"`
+		Manifest cmdManifest `command:"manifest"`
+	}
+
+	cmdManifest struct{} // stub
+
+)
 
 func main() {
 	if err := run(os.Args); err != nil {
@@ -23,17 +24,10 @@ func main() {
 }
 
 func run(args []string) error {
-	var flags opts
-	args1, err := goflags.ParseArgs(&flags, args)
-	if err != nil {
+	var opts params
+	if _, err := goflags.ParseArgs(&opts, args[1:]); err != nil {
 		return err
 	}
-	if len(args1) != 0 {
-		return errors.New("too many args")
-	}
-
-	fmt.Printf("infile: %s\n", flags.PositionalArgs.Infile)
-	fmt.Printf("outfile: %s\n", flags.PositionalArgs.Outfile)
 
 	return nil
 }
