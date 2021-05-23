@@ -64,8 +64,9 @@ def _lxcconfig_impl(ctx):
 def lxcbundle(name, src, version, overlay_tars = []):
     if type(version) != "int":
         fail("version must be an int, got {}".format(type(version)))
-    stage0 = name + "/_stage0/rootfs"
-    stage1 = name + "/_stage1/rootfs"
+    nameversion = "{}.{}".format(name, version)
+    stage0 = nameversion + "/_stage0/rootfs"
+    stage1 = nameversion + "/_stage1/rootfs"
     rootfs(
         name = stage0,
         src = src,
@@ -77,16 +78,15 @@ def lxcbundle(name, src, version, overlay_tars = []):
         extension = "tar.xz",
         out = stage1 + ".tar.xz",
     )
-    lxcconfig(name, src = src, out = name + "/_stage1/meta.tar.xz")
+    lxcconfig(name, version, src = src, out = name + "/_stage1/meta.tar.xz")
 
-    outname = "{}.{}.tar".format(name, version)
     pkg_tar(
-        name = name,
+        name = nameversion,
         srcs = [
-            name + "/_stage1/rootfs",
-            name + "/_stage1/meta",
+            nameversion + "/_stage1/rootfs",
+            nameversion + "/_stage1/meta",
         ],
-        out = outname,
+        out = "{}.tar".format(nameversion),
     )
 
 _lxcconfig = rule(
@@ -98,12 +98,13 @@ _lxcconfig = rule(
     },
 )
 
-def lxcconfig(name, src, out = None):
-    _lxcconfig(name = name + "/_stage0/config", src = src)
+def lxcconfig(name, version, src, out = None):
+    nameversion = "{}.{}".format(name, version)
+    _lxcconfig(name = nameversion + "/_stage0/config", src = src)
     pkg_tar(
-        name = name + "/_stage1/meta",
+        name = nameversion + "/_stage1/meta",
         extension = "tar.xz",
-        srcs = [name + "/_stage0/config"],
+        srcs = [nameversion + "/_stage0/config"],
         remap_paths = {
             name: "",
         },
