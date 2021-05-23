@@ -23,13 +23,7 @@ go_binary(
     visibility = ["//visibility:public"],
 )
 
-container_bundle(
-    name = "alpine",
-    images = {"base": "@alpine//image"},
-)
-
 rootfs(
-    name = "alpine-rootfs1",
-    src = ":alpine.tar",
-    output = "alpine-rootfs.tar",
+    name = "alpine-rootfs",
+    src = "@alpine//image:image",
 )
