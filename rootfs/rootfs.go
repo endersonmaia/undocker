@@ -61,7 +61,7 @@ func RootFS(in io.ReadSeeker, out io.Writer) (err error) {
 		case filepath.Clean(hdr.Name) == _manifestJSON:
 			dec := json.NewDecoder(tr)
 			if err := dec.Decode(&manifest); err != nil {
-				return fmt.Errorf("parse %s: %w", _manifestJSON, err)
+				return fmt.Errorf("decode %s: %w", _manifestJSON, err)
 			}
 		case strings.HasSuffix(hdr.Name, _layerSuffix):
 			here, err := in.Seek(0, io.SeekCurrent)
