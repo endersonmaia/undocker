@@ -113,7 +113,7 @@ func (r *RootFS) WriteTo(w io.Writer) (n int64, err error) {
 		if _, err := r.rd.Seek(no.offset, io.SeekStart); err != nil {
 			return n, err
 		}
-		tr, closer = readTar(r.rd)
+		tr, closer = openTargz(r.rd)
 		for {
 			hdr, err := tr.Next()
 			if err == io.EOF {
@@ -156,7 +156,7 @@ func (r *RootFS) WriteTo(w io.Writer) (n int64, err error) {
 		if _, err := r.rd.Seek(no.offset, io.SeekStart); err != nil {
 			return n, err
 		}
-		tr, closer = readTar(r.rd)
+		tr, closer = openTargz(r.rd)
 		for {
 			hdr, err := tr.Next()
 			if err == io.EOF {
@@ -232,29 +232,28 @@ func whiteoutDirs(whreaddir map[string]int, nlayers int) []*tree {
 	return ret
 }
 
-// readTar creates a tar reader from a targzip or tar
-func readTar(r io.Reader) (*tar.Reader, func() error) {
-	var buf bytes.Buffer
-	w := &discarder{w: &buf}
-	r2 := io.TeeReader(r, w)
-	gz, err := gzip.NewReader(r2)
+// openTargz creates a tar reader from a targzip or tar
+func openTargz(r io.Reader) (*tar.Reader, func() error) {
+	var hdrbuf bytes.Buffer
+	hdrw := &discarder{w: &hdrbuf}
+	gz, err := gzip.NewReader(io.TeeReader(r, hdrw))
 	if err == nil {
-		w.discard = true
-		buf.Reset()
+		hdrw.w = nil
+		hdrbuf.Reset()
 		return tar.NewReader(gz), gz.Close
 	}
-	return tar.NewReader(io.MultiReader(&buf, r)), func() error { return nil }
+	return tar.NewReader(io.MultiReader(&hdrbuf, r)), func() error { return nil }
 }
 
-// discarder is a pass-through writer until asked to 'discard' its writes.
-// useful for proxying writes from a TeeReader until a certain point.
+// discarder is a pass-through writer until instructed to 'discard' its writes
+// by setting its writer to nil. Useful for proxying writes from a TeeReader
+// until it's known to be unnecessary.
 type discarder struct {
 	w       io.Writer
-	discard bool
 }
 
 func (d *discarder) Write(p []byte) (int, error) {
-	if d.discard {
+	if d.w == nil {
 		return len(p), nil
 	}
 	return d.w.Write(p)
