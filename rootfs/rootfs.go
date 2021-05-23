@@ -9,7 +9,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/motiejus/code/undocker/internal/tree"
 	"go.uber.org/multierr"
 )
 
@@ -194,10 +193,10 @@ func writeFile(tr *tar.Reader, tw *tar.Writer, hdr *tar.Header) error {
 	return nil
 }
 
-func whiteoutDirs(whreaddir map[string]int, nlayers int) []*tree.Tree {
-	ret := make([]*tree.Tree, nlayers)
+func whiteoutDirs(whreaddir map[string]int, nlayers int) []*Tree {
+	ret := make([]*Tree, nlayers)
 	for i := range ret {
-		ret[i] = tree.New()
+		ret[i] = New()
 	}
 	for fname, layer := range whreaddir {
 		if layer == 0 {

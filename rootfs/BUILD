@@ -5,18 +5,19 @@ go_library(
     srcs = [
         "doc.go",
         "rootfs.go",
+        "tree.go",
     ],
     importpath = "github.com/motiejus/code/undocker/rootfs",
     visibility = ["//visibility:public"],
-    deps = [
-        "//src/undocker/internal/tree:go_default_library",
-        "@org_uber_go_multierr//:go_default_library",
-    ],
+    deps = ["@org_uber_go_multierr//:go_default_library"],
 )
 
 go_test(
     name = "go_default_test",
-    srcs = ["rootfs_test.go"],
+    srcs = [
+        "rootfs_test.go",
+        "tree_test.go",
+    ],
     embed = [":go_default_library"],
     deps = [
         "@com_github_stretchr_testify//assert:go_default_library",
