@@ -1,3 +1,4 @@
+// Package main is a simple command-line application on top of rootfs.Flatten.
 package main
 
 import (
