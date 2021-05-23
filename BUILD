@@ -1,10 +1,7 @@
 load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
 load("@bazel_tools//tools/build_defs/pkg:pkg.bzl", "pkg_tar")
 load("//src/undocker:rules.bzl", "rootfs", "temp")
-load(
-    "@io_bazel_rules_docker//container:container.bzl",
-    "container_bundle",
-)
+load("@io_bazel_rules_docker//container:container.bzl", "container_bundle")
 
 go_library(
     name = "go_default_library",
@@ -26,7 +23,7 @@ go_binary(
 
 genrule(
     name = "alpine-rootfs",
-    srcs = ["@alpine//image:image"],
+    srcs = ["@alpine//image"],
     outs = ["alpine-rootfs.tar"],
     cmd = "$(location :undocker) rootfs $< $@",
     tools = [":undocker"],
@@ -35,7 +32,7 @@ genrule(
 # later debugging
 pkg_tar(
     name = "alpine-container-plus",
-    deps = ["@alpine//image:image"],
+    deps = ["@alpine//image"],
 )
 
 rootfs(
@@ -52,6 +49,6 @@ filegroup(
 
 temp(
     name = "temp",
-    data = ":maingo",
     out = "maingo.txt",
+    data = ":maingo",
 )

@@ -11,8 +11,8 @@ def _rootfs_impl(ctx):
         ],
     )
     return [DefaultInfo(
-            files = depset([out]),
-            runfiles = ctx.runfiles(files = ctx.files.src),
+        files = depset([out]),
+        runfiles = ctx.runfiles(files = ctx.files.src),
     )]
 
 rootfs = rule(
@@ -46,6 +46,6 @@ temp = rule(
     implementation = _temp_impl,
     attrs = {
         "data": attr.label(mandatory = True, allow_single_file = True),
-        "out": attr.output(mandatory = True)
+        "out": attr.output(mandatory = True),
     },
 )
