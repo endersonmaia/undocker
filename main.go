@@ -37,7 +37,7 @@ func run(args []string) error {
 type cmdRootFS struct {
 	PositionalArgs struct {
 		Infile  goflags.Filename `long:"infile" description:"Input tarball"`
-		Outfile string           `long:"outfile" description:"Output tarball (flattened file system)"`
+		Outfile string           `long:"outfile" description:"Output path, stdout is '-'"`
 	} `positional-args:"yes" required:"yes"`
 }
 
@@ -54,9 +54,15 @@ func (r *cmdRootFS) Execute(args []string) (err error) {
 		err = multierr.Append(err, in.Close())
 	}()
 
-	out, err := os.Create(string(r.PositionalArgs.Outfile))
-	if err != nil {
-		return err
+	var out *os.File
+	outf := string(r.PositionalArgs.Outfile)
+	if outf == "-" {
+		out = os.Stdout
+	} else {
+		out, err = os.Create(outf)
+		if err != nil {
+			return err
+		}
 	}
 	defer func() {
 		err = multierr.Append(err, out.Close())
