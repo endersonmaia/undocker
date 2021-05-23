@@ -11,8 +11,6 @@ import (
 	"io/ioutil"
 	"path/filepath"
 	"strings"
-
-	"go.uber.org/multierr"
 )
 
 const (
@@ -142,7 +140,12 @@ func Flatten(rd io.ReadSeeker, w io.Writer) (err error) {
 
 	tw := tar.NewWriter(w)
 	defer func() {
-		err = multierr.Append(err, tw.Close())
+		// Avoiding use of multierr: if error is present, return
+		// that. Otherwise return whatever `Close` returns.
+		err1 := tw.Close()
+		if err == nil {
+			err = err1
+		}
 	}()
 	// iterate through all layers, all files, and write files.
 	for i, no := range layers {
