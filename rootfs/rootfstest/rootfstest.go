@@ -12,11 +12,7 @@ import (
 
 type (
 	Tarrer interface {
-		Tar(*tar.Writer)
-	}
-
-	Byter interface {
-		Bytes() []byte
+		Tar(*tar.Writer) error
 	}
 
 	Tarball []Tarrer
@@ -33,7 +29,7 @@ type (
 	File struct {
 		Name     string
 		Uid      int
-		Contents Byter
+		Contents *bytes.Buffer
 	}
 
 	Manifest []string
@@ -48,55 +44,60 @@ type (
 	}
 )
 
-func (tb Tarball) Bytes() []byte {
-	buf := bytes.Buffer{}
+func (tb Tarball) Buffer() *bytes.Buffer {
+	var buf bytes.Buffer
 	tw := tar.NewWriter(&buf)
 	for _, member := range tb {
 		member.Tar(tw)
 	}
 	tw.Close()
-	return buf.Bytes()
+	return &buf
 }
 
-func (d Dir) Tar(tw *tar.Writer) {
+func (d Dir) Tar(tw *tar.Writer) error {
 	hdr := &tar.Header{
 		Typeflag: tar.TypeDir,
 		Name:     d.Name,
 		Mode:     0644,
 		Uid:      d.Uid,
 	}
-	tw.WriteHeader(hdr)
+	return tw.WriteHeader(hdr)
 }
 
-func (f File) Tar(tw *tar.Writer) {
-	var contentbytes []byte
+func (f File) Tar(tw *tar.Writer) error {
+	var contents []byte
 	if f.Contents != nil {
-		contentbytes = f.Contents.Bytes()
+		contents = f.Contents.Bytes()
 	}
 	hdr := &tar.Header{
 		Typeflag: tar.TypeReg,
 		Name:     f.Name,
 		Mode:     0644,
 		Uid:      f.Uid,
-		Size:     int64(len(contentbytes)),
+		Size:     int64(len(contents)),
 	}
-	tw.WriteHeader(hdr)
-	tw.Write(contentbytes)
+	if err := tw.WriteHeader(hdr); err != nil {
+		return err
+	}
+	if _, err := tw.Write(contents); err != nil {
+		return err
+	}
+	return nil
 }
 
-func (m Manifest) Tar(tw *tar.Writer) {
+func (m Manifest) Tar(tw *tar.Writer) error {
 	b, err := json.Marshal(dockerManifestJSON{{Layers: m}})
 	if err != nil {
-		panic("testerr")
+		return err
 	}
-	File{
+	return File{
 		Name:     "manifest.json",
 		Contents: bytes.NewBuffer(b),
 	}.Tar(tw)
 }
 
-func (h Hardlink) Tar(tw *tar.Writer) {
-	tw.WriteHeader(&tar.Header{
+func (h Hardlink) Tar(tw *tar.Writer) error {
+	return tw.WriteHeader(&tar.Header{
 		Typeflag: tar.TypeLink,
 		Name:     h.Name,
 		Mode:     0644,

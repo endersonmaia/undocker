@@ -55,8 +55,8 @@ func TestRootFS(t *testing.T) {
 		{
 			name: "basic file overwrite, layer order mixed",
 			image: tarball{
-				file{Name: "layer1/layer.tar", Contents: layer1},
-				file{Name: "layer0/layer.tar", Contents: layer0},
+				file{Name: "layer1/layer.tar", Contents: layer1.Buffer()},
+				file{Name: "layer0/layer.tar", Contents: layer0.Buffer()},
 				manifest{"layer0/layer.tar", "layer1/layer.tar"},
 			},
 			want: []extractable{
@@ -69,10 +69,10 @@ func TestRootFS(t *testing.T) {
 			image: tarball{
 				file{Name: "layer0/layer.tar", Contents: tarball{
 					file{Name: "a"},
-				}},
+				}.Buffer()},
 				file{Name: "layer1/layer.tar", Contents: tarball{
 					hardlink{Name: "a"},
-				}},
+				}.Buffer()},
 				manifest{"layer0/layer.tar", "layer1/layer.tar"},
 			},
 			want: []extractable{
@@ -82,9 +82,9 @@ func TestRootFS(t *testing.T) {
 		{
 			name: "directory overwrite retains original dir",
 			image: tarball{
-				file{Name: "layer2/layer.tar", Contents: layer2},
-				file{Name: "layer0/layer.tar", Contents: layer0},
-				file{Name: "layer1/layer.tar", Contents: layer1},
+				file{Name: "layer2/layer.tar", Contents: layer2.Buffer()},
+				file{Name: "layer0/layer.tar", Contents: layer0.Buffer()},
+				file{Name: "layer1/layer.tar", Contents: layer1.Buffer()},
 				manifest{"layer0/layer.tar", "layer1/layer.tar", "layer2/layer.tar"},
 			},
 			want: []extractable{
@@ -101,11 +101,11 @@ func TestRootFS(t *testing.T) {
 					file{Name: "fileb"},
 					dir{Name: "dira"},
 					dir{Name: "dirb"},
-				}},
+				}.Buffer()},
 				file{Name: "layer1/layer.tar", Contents: tarball{
 					hardlink{Name: ".wh.filea"},
 					hardlink{Name: ".wh.dira"},
-				}},
+				}.Buffer()},
 				manifest{"layer0/layer.tar", "layer1/layer.tar"},
 			},
 			want: []extractable{
@@ -118,13 +118,13 @@ func TestRootFS(t *testing.T) {
 			image: tarball{
 				file{Name: "layer0/layer.tar", Contents: tarball{
 					file{Name: "file", Contents: bytes.NewBufferString("from 0")},
-				}},
+				}.Buffer()},
 				file{Name: "layer1/layer.tar", Contents: tarball{
 					hardlink{Name: ".wh.file"},
-				}},
+				}.Buffer()},
 				file{Name: "layer2/layer.tar", Contents: tarball{
 					file{Name: "file", Contents: bytes.NewBufferString("from 3")},
-				}},
+				}.Buffer()},
 				manifest{
 					"layer0/layer.tar",
 					"layer1/layer.tar",
@@ -140,10 +140,10 @@ func TestRootFS(t *testing.T) {
 			image: tarball{
 				file{Name: "layer0/layer.tar", Contents: tarball{
 					dir{Name: "dir"},
-				}},
+				}.Buffer()},
 				file{Name: "layer1/layer.tar", Contents: tarball{
 					dir{Name: ".wh.dir"},
-				}},
+				}.Buffer()},
 				manifest{"layer0/layer.tar", "layer1/layer.tar"},
 			},
 			want: []extractable{
@@ -157,12 +157,12 @@ func TestRootFS(t *testing.T) {
 				file{Name: "layer0/layer.tar", Contents: tarball{
 					dir{Name: "a"},
 					file{Name: "a/filea"},
-				}},
+				}.Buffer()},
 				file{Name: "layer1/layer.tar", Contents: tarball{
 					dir{Name: "a"},
 					file{Name: "a/fileb"},
 					hardlink{Name: "a/.wh..wh..opq"},
-				}},
+				}.Buffer()},
 				manifest{"layer0/layer.tar", "layer1/layer.tar"},
 			},
 			want: []extractable{
@@ -174,7 +174,7 @@ func TestRootFS(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			in := bytes.NewReader(tt.image.Bytes())
+			in := bytes.NewReader(tt.image.Buffer().Bytes())
 			out := bytes.Buffer{}
 
 			err := New(in).WriteTo(&out)
