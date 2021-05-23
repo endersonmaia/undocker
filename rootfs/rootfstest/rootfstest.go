@@ -91,7 +91,6 @@ func (m Manifest) Tar(tw *tar.Writer) {
 	}
 	File{
 		Name:     "manifest.json",
-		Uid:      0,
 		Contents: bytes.NewBuffer(b),
 	}.Tar(tw)
 }
