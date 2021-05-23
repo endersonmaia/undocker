@@ -58,48 +58,109 @@ type dockerManifestJSON []struct {
 // 4. go through
 func (r *cmdRootFS) rootfs(in io.ReadSeeker, out io.Writer) error {
 	tr := tar.NewReader(in)
+	tw := tar.NewWriter(out)
+	// layerOffsets maps a layer name (a9b123c0daa/layer.tar) to it's offset
 	layerOffsets := map[string]int64{}
+
+	// manifest is the docker manifest in the image
 	var manifest dockerManifestJSON
 
 	// phase 1: get layer offsets and manifest.json
 	for {
-		hdrIn, err := tr.Next()
+		hdr, err := tr.Next()
 		if err == io.EOF {
 			break
 		}
 
-		if hdrIn.Typeflag != tar.TypeReg {
+		if hdr.Typeflag != tar.TypeReg {
 			continue
 		}
 
 		switch {
-		case hdrIn.Name == _manifestJSON:
+		case hdr.Name == _manifestJSON:
 			dec := json.NewDecoder(tr)
 			if err := dec.Decode(&manifest); err != nil {
 				return fmt.Errorf("decode manifest.json: %w", err)
 			}
-		case strings.HasSuffix(hdrIn.Name, "/layer.tar"):
+		case strings.HasSuffix(hdr.Name, "/layer.tar"):
 			here, err := in.Seek(0, io.SeekCurrent)
 			if err != nil {
 				return fmt.Errorf("seek: %w", err)
 			}
-			layers[hdrIn.Name] = here
+			layerOffsets[hdr.Name] = here
+			//fmt.Printf("%s\t%x\n", hdr.Name, here)
 		}
 	}
 
 	// phase 1.5: enumerate layers
-	layers := make([]int64, len(layers))
-	for i, name := range manifest.Layers {
+	layers := make([]int64, len(layerOffsets))
+	for i, name := range manifest[0].Layers {
 		layers[i] = layerOffsets[name]
 	}
 
-	// phase 2: iterate through all layers and extract filenames
-	// to files and ordered
-	files := map[string]struct{
-		layer string
+	// file2layer maps a filename to layer number (index in "layers")
+	file2layer := map[string]int{}
 
-	fmt.Printf("layers: %+v\n", layers)
+	// phase 2: iterate through all layers and save filenames
+	// for all kinds of files.
+	for i, offset := range layers {
+		if _, err := in.Seek(offset, io.SeekStart); err != nil {
+			fmt.Errorf("seek: %w", err)
+		}
+		tr = tar.NewReader(in)
 
-	return nil
-	//return tw.Close()
+		for {
+			hdr, err := tr.Next()
+			if err == io.EOF {
+				break
+			}
+			file2layer[hdr.Name] = i
+		}
+	}
+
+	// phase 3: iterate through all layers and write files.
+	for i, offset := range layers {
+		if _, err := in.Seek(offset, io.SeekStart); err != nil {
+			fmt.Errorf("seek: %w", err)
+		}
+		tr = tar.NewReader(in)
+
+		for {
+			hdr, err := tr.Next()
+			if err == io.EOF {
+				break
+			}
+			if file2layer[hdr.Name] != i {
+				continue
+			}
+
+			hdrOut := &tar.Header{
+				Typeflag: hdr.Typeflag,
+				Name:     hdr.Name,
+				Linkname: hdr.Linkname,
+				Size:     hdr.Size,
+				Mode:     int64(hdr.Mode & 0777),
+				Uid:      hdr.Uid,
+				Gid:      hdr.Gid,
+				Uname:    hdr.Uname,
+				Gname:    hdr.Gname,
+				ModTime:  hdr.ModTime,
+				Devmajor: hdr.Devmajor,
+				Devminor: hdr.Devminor,
+				Format:   tar.FormatGNU,
+			}
+
+			if err := tw.WriteHeader(hdrOut); err != nil {
+				return err
+			}
+
+			if hdr.Typeflag == tar.TypeReg {
+				if _, err := io.Copy(tw, tr); err != nil {
+					return err
+				}
+			}
+		}
+	}
+
+	return tw.Close()
 }
