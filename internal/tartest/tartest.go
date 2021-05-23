@@ -3,6 +3,8 @@ package tartest
 import (
 	"archive/tar"
 	"bytes"
+	"compress/gzip"
+	"fmt"
 	"io"
 	"testing"
 
@@ -50,6 +52,20 @@ func (tb Tarball) Buffer() *bytes.Buffer {
 		member.Tar(tw)
 	}
 	tw.Close()
+	return &buf
+}
+
+// Gzip returns a gzipped buffer
+func (tb Tarball) Gzip() *bytes.Buffer {
+	var buf bytes.Buffer
+	w := gzip.NewWriter(&buf)
+	_, err := io.Copy(w, tb.Buffer())
+	if err != nil {
+		panic(fmt.Errorf("Gzip(): %w", err))
+	}
+	if err := w.Close(); err != nil {
+		panic(fmt.Errorf("gzip.Close(): %w", err))
+	}
 	return &buf
 }
 

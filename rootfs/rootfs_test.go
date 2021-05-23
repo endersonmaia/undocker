@@ -167,6 +167,18 @@ func TestRootFS(t *testing.T) {
 				file{Name: "a/fileb"},
 			},
 		},
+		{
+			name: "archived layer",
+			image: tarball{
+				file{Name: "layer1/layer.tar", Contents: layer1.Gzip()},
+				file{Name: "layer0/layer.tar", Contents: layer0.Gzip()},
+				manifest{"layer0/layer.tar", "layer1/layer.tar"},
+			},
+			want: []extractable{
+				dir{Name: "/", UID: 0},
+				file{Name: "/file", UID: 1, Contents: bytes.NewBufferString("from 1")},
+			},
+		},
 	}
 
 	for _, tt := range tests {

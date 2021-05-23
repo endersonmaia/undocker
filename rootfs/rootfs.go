@@ -2,6 +2,8 @@ package rootfs
 
 import (
 	"archive/tar"
+	"bytes"
+	"compress/gzip"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -9,7 +11,7 @@ import (
 	"path/filepath"
 	"strings"
 
-     "github.com/motiejus/code/undocker/internal/bytecounter"
+	"github.com/motiejus/code/undocker/internal/bytecounter"
 	"go.uber.org/multierr"
 )
 
@@ -43,6 +45,7 @@ func (r *RootFS) WriteTo(w io.Writer) (n int64, err error) {
 	wr := bytecounter.New(w)
 	tr := tar.NewReader(r.rd)
 	tw := tar.NewWriter(wr)
+	var closer func() error
 	defer func() {
 		err = multierr.Append(err, tw.Close())
 		n = wr.N
@@ -110,7 +113,7 @@ func (r *RootFS) WriteTo(w io.Writer) (n int64, err error) {
 		if _, err := r.rd.Seek(no.offset, io.SeekStart); err != nil {
 			return n, err
 		}
-		tr = tar.NewReader(r.rd)
+		tr, closer = readTar(r.rd)
 		for {
 			hdr, err := tr.Next()
 			if err == io.EOF {
@@ -138,8 +141,10 @@ func (r *RootFS) WriteTo(w io.Writer) (n int64, err error) {
 					continue
 				}
 			}
-
 			file2layer[hdr.Name] = i
+		}
+		if err := closer(); err != nil {
+			return n, err
 		}
 	}
 
@@ -151,7 +156,7 @@ func (r *RootFS) WriteTo(w io.Writer) (n int64, err error) {
 		if _, err := r.rd.Seek(no.offset, io.SeekStart); err != nil {
 			return n, err
 		}
-		tr = tar.NewReader(r.rd)
+		tr, closer = readTar(r.rd)
 		for {
 			hdr, err := tr.Next()
 			if err == io.EOF {
@@ -172,6 +177,9 @@ func (r *RootFS) WriteTo(w io.Writer) (n int64, err error) {
 			if err := writeFile(tr, tw, hdr); err != nil {
 				return n, err
 			}
+		}
+		if err := closer(); err != nil {
+			return n, err
 		}
 	}
 	return n, nil
@@ -222,4 +230,32 @@ func whiteoutDirs(whreaddir map[string]int, nlayers int) []*tree {
 		ret[i-1].Merge(ret[i])
 	}
 	return ret
+}
+
+// readTar creates a tar reader from a targzip or tar
+func readTar(r io.Reader) (*tar.Reader, func() error) {
+	var buf bytes.Buffer
+	w := &discarder{w: &buf}
+	r2 := io.TeeReader(r, w)
+	gz, err := gzip.NewReader(r2)
+	if err == nil {
+		w.discard = true
+		buf.Reset()
+		return tar.NewReader(gz), gz.Close
+	}
+	return tar.NewReader(io.MultiReader(&buf, r)), func() error { return nil }
+}
+
+// discarder is a pass-through writer until asked to 'discard' its writes.
+// useful for proxying writes from a TeeReader until a certain point.
+type discarder struct {
+	w       io.Writer
+	discard bool
+}
+
+func (d *discarder) Write(p []byte) (int, error) {
+	if d.discard {
+		return len(p), nil
+	}
+	return d.w.Write(p)
 }
