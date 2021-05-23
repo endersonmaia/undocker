@@ -15,7 +15,7 @@ type tree struct {
 	end      bool
 }
 
-// New creates a new tree from a given path.
+// newTree creates a new tree from a given path.
 func newTree(paths ...string) *tree {
 	t := &tree{name: ".", children: []*tree{}}
 	for _, path := range paths {

@@ -1,9 +1,8 @@
-package rootfstest
+package tartest
 
 import (
 	"archive/tar"
 	"bytes"
-	"encoding/json"
 	"io"
 	"testing"
 
@@ -32,15 +31,9 @@ type (
 		Contents *bytes.Buffer
 	}
 
-	Manifest []string
-
 	Hardlink struct {
 		Name string
 		Uid  int
-	}
-
-	dockerManifestJSON []struct {
-		Layers []string `json:"Layers"`
 	}
 )
 
@@ -83,17 +76,6 @@ func (f File) Tar(tw *tar.Writer) error {
 		return err
 	}
 	return nil
-}
-
-func (m Manifest) Tar(tw *tar.Writer) error {
-	b, err := json.Marshal(dockerManifestJSON{{Layers: m}})
-	if err != nil {
-		return err
-	}
-	return File{
-		Name:     "manifest.json",
-		Contents: bytes.NewBuffer(b),
-	}.Tar(tw)
 }
 
 func (h Hardlink) Tar(tw *tar.Writer) error {

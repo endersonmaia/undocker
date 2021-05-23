@@ -1,25 +1,22 @@
 package rootfs
 
 import (
+	"archive/tar"
 	"bytes"
+	"encoding/json"
 	"testing"
 
-	"github.com/motiejus/code/undocker/rootfs/rootfstest"
+	"github.com/motiejus/code/undocker/internal/tartest"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 type (
-	file        = rootfstest.File
-	dir         = rootfstest.Dir
-	hardlink    = rootfstest.Hardlink
-	manifest    = rootfstest.Manifest
-	extractable = rootfstest.Extractable
-	tarball     = rootfstest.Tarball
-)
-
-var (
-	extract = rootfstest.Extract
+	file        = tartest.File
+	dir         = tartest.Dir
+	hardlink    = tartest.Hardlink
+	extractable = tartest.Extractable
+	tarball     = tartest.Tarball
 )
 
 func TestRootFS(t *testing.T) {
@@ -183,8 +180,24 @@ func TestRootFS(t *testing.T) {
 				return
 			}
 			require.NoError(t, err)
-			got := extract(t, &out)
+			got := tartest.Extract(t, &out)
 			assert.Equal(t, tt.want, got)
 		})
 	}
+}
+
+// Helpers
+type (
+	manifest []string
+)
+
+func (m manifest) Tar(tw *tar.Writer) error {
+	b, err := json.Marshal(dockerManifestJSON{{Layers: m}})
+	if err != nil {
+		return err
+	}
+	return file{
+		Name:     "manifest.json",
+		Contents: bytes.NewBuffer(b),
+	}.Tar(tw)
 }
