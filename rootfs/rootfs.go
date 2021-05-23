@@ -81,10 +81,17 @@ func (r *RootFS) WriteTo(w io.Writer) (n int64, err error) {
 		return n, errBadManifest
 	}
 
+	type nameOffset struct {
+		name   string
+		offset int64
+	}
 	// enumerate layers the way they would be laid down in the image
-	layers := make([]int64, len(layerOffsets))
+	layers := make([]nameOffset, len(layerOffsets))
 	for i, name := range manifest[0].Layers {
-		layers[i] = layerOffsets[name]
+		layers[i] = nameOffset{
+			name:   name,
+			offset: layerOffsets[name],
+		}
 	}
 
 	// file2layer maps a filename to layer number (index in "layers")
@@ -98,8 +105,8 @@ func (r *RootFS) WriteTo(w io.Writer) (n int64, err error) {
 	wh := map[string]int{}
 
 	// iterate over all files, construct `file2layer`, `whreaddir`, `wh`
-	for i, offset := range layers {
-		if _, err := r.rd.Seek(offset, io.SeekStart); err != nil {
+	for i, no := range layers {
+		if _, err := r.rd.Seek(no.offset, io.SeekStart); err != nil {
 			return n, err
 		}
 		tr = tar.NewReader(r.rd)
@@ -109,7 +116,7 @@ func (r *RootFS) WriteTo(w io.Writer) (n int64, err error) {
 				break
 			}
 			if err != nil {
-				return n, err
+				return n, fmt.Errorf("decode %s: %w", no.name, err)
 			}
 			if hdr.Typeflag == tar.TypeDir {
 				continue
@@ -139,8 +146,8 @@ func (r *RootFS) WriteTo(w io.Writer) (n int64, err error) {
 	whIgnore := whiteoutDirs(whreaddir, len(layers))
 
 	// iterate through all layers, all files, and write files.
-	for i, offset := range layers {
-		if _, err := r.rd.Seek(offset, io.SeekStart); err != nil {
+	for i, no := range layers {
+		if _, err := r.rd.Seek(no.offset, io.SeekStart); err != nil {
 			return n, err
 		}
 		tr = tar.NewReader(r.rd)
@@ -150,7 +157,7 @@ func (r *RootFS) WriteTo(w io.Writer) (n int64, err error) {
 				break
 			}
 			if err != nil {
-				return n, err
+				return n, fmt.Errorf("decode %s: %w", no.name, err)
 			}
 			if layer, ok := wh[hdr.Name]; ok && layer >= i {
 				continue
