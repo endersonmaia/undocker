@@ -53,11 +53,16 @@
 // top dir>/.wh..wh.aufs`.
 //
 // My interpretation:
-// - a hardlink called `.wh..wh..opq` means that directory contents from the
-// layers below the mentioned file should be ignored. Higher layers may add
+// - a file/hardlink called `.wh..wh..opq` means that directory contents from
+// the layers below the mentioned file should be ignored. Higher layers may add
 // files on top.
-// - if hardlink `.wh.([^/]+)` is found, $1 should be deleted from the current
-// and lower layers.
+//   * Ambiguity: should the directory from the lower layers be removed? I am
+//     assuming yes, but this assumptions is baseless.
+// - if file/hardlink `.wh.([^/]+)` is found, $1 should be deleted from the
+// current and lower layers.
+//
+// Note: these may be regular files in practice. So this implementation will
+// match either.
 //
 // == Tar format ==
 //

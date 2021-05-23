@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/motiejus/code/undocker/internal/tree"
 	"go.uber.org/multierr"
 )
 
@@ -85,8 +86,7 @@ func RootFS(in io.ReadSeeker, out io.Writer) (err error) {
 	// file2layer maps a filename to layer number (index in "layers")
 	file2layer := map[string]int{}
 
-	// whreaddir maps a directory to a layer number until which
-	// its contents should be ignored, exclusively.
+	// whreaddir maps `wh..wh..opq` file to a layer.
 	whreaddir := map[string]int{}
 
 	// wh maps a filename to a layer until which it should be ignored,
@@ -111,7 +111,9 @@ func RootFS(in io.ReadSeeker, out io.Writer) (err error) {
 				continue
 			}
 
-			if hdr.Typeflag == tar.TypeLink {
+			// according to aufs documentation, whiteout files should be hardlinks.
+			// I saw at least one docker container using regular files for whiteout.
+			if hdr.Typeflag == tar.TypeLink || hdr.Typeflag == tar.TypeReg {
 				basename := filepath.Base(hdr.Name)
 				basedir := filepath.Dir(hdr.Name)
 				if basename == _whReaddir {
@@ -128,7 +130,10 @@ func RootFS(in io.ReadSeeker, out io.Writer) (err error) {
 		}
 	}
 
-	// phase 3: iterate through all layers and write files.
+	// construct directories to ignore, by layer.
+	whIgnore := whiteoutDirs(whreaddir, len(layers))
+
+	// iterate through all layers and write files.
 	for i, offset := range layers {
 		if _, err := in.Seek(offset, io.SeekStart); err != nil {
 			return err
@@ -142,7 +147,13 @@ func RootFS(in io.ReadSeeker, out io.Writer) (err error) {
 			if err != nil {
 				return err
 			}
-			if file2layer[hdr.Name] != i {
+			if layer, ok := wh[hdr.Name]; ok && layer >= i {
+				continue
+			}
+			if whIgnore[i].HasPrefix(hdr.Name) {
+				continue
+			}
+			if hdr.Typeflag != tar.TypeDir && file2layer[hdr.Name] != i {
 				continue
 			}
 			if err := writeFile(tr, tw, hdr); err != nil {
@@ -181,4 +192,21 @@ func writeFile(tr *tar.Reader, tw *tar.Writer, hdr *tar.Header) error {
 	}
 
 	return nil
+}
+
+func whiteoutDirs(whreaddir map[string]int, nlayers int) []*tree.Tree {
+	ret := make([]*tree.Tree, nlayers)
+	for i := range ret {
+		ret[i] = tree.New()
+	}
+	for fname, layer := range whreaddir {
+		if layer == 0 {
+			continue
+		}
+		ret[layer-1].Add(fname)
+	}
+	for i := nlayers - 1; i > 0; i-- {
+		ret[i-1].Merge(ret[i])
+	}
+	return ret
 }

@@ -110,26 +110,19 @@ func TestRootFS(t *testing.T) {
 			},
 		},
 		{
-			name: "files and directories do not whiteout",
+			name: "directories do not whiteout",
 			image: tarball{
 				file{name: "layer0/layer.tar", contents: tarball{
 					dir{name: "dir"},
-					file{name: "file"},
-					file{name: ".wh..wh..opq", uid: 0},
 				}},
 				file{name: "layer1/layer.tar", contents: tarball{
 					dir{name: ".wh.dir"},
-					file{name: ".wh.file"},
-					file{name: ".wh..wh..opq", uid: 1},
 				}},
 				manifest{"layer0/layer.tar", "layer1/layer.tar"},
 			},
 			want: []extractable{
 				dir{name: "dir"},
 				dir{name: ".wh.dir"},
-				file{name: "file"},
-				file{name: ".wh.file"},
-				file{name: ".wh..wh..opq", uid: 1},
 			},
 		},
 		{
@@ -140,6 +133,7 @@ func TestRootFS(t *testing.T) {
 					file{name: "a/filea"},
 				}},
 				file{name: "layer1/layer.tar", contents: tarball{
+					dir{name: "a"},
 					file{name: "a/fileb"},
 					hardlink{name: "a/.wh..wh..opq"},
 				}},

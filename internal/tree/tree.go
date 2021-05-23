@@ -16,7 +16,7 @@ type Tree struct {
 }
 
 // New creates a new tree from a given path.
-func New(paths []string) *Tree {
+func New(paths ...string) *Tree {
 	t := &Tree{name: ".", children: []*Tree{}}
 	for _, path := range paths {
 		t.Add(path)
