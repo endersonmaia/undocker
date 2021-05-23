@@ -65,6 +65,21 @@ func TestRootFS(t *testing.T) {
 			},
 		},
 		{
+			name: "overwrite file with hardlink",
+			image: tarball{
+				file{Name: "layer0/layer.tar", Contents: tarball{
+					file{Name: "a"},
+				}},
+				file{Name: "layer1/layer.tar", Contents: tarball{
+					hardlink{Name: "a"},
+				}},
+				manifest{"layer0/layer.tar", "layer1/layer.tar"},
+			},
+			want: []extractable{
+				hardlink{Name: "a"},
+			},
+		},
+		{
 			name: "directory overwrite retains original dir",
 			image: tarball{
 				file{Name: "layer2/layer.tar", Contents: layer2},
