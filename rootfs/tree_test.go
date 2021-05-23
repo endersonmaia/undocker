@@ -2,8 +2,6 @@ package rootfs
 
 import (
 	"testing"
-
-	"github.com/stretchr/testify/assert"
 )
 
 func TestTree(t *testing.T) {
@@ -99,7 +97,9 @@ func TestString(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			tree := newTree(tt.paths...)
-			assert.Equal(t, tt.wantStr, tree.String())
+			if tt.wantStr != tree.String() {
+				t.Errorf("want != got: %q != %q", tt.wantStr, tree.String())
+			}
 		})
 	}
 }
