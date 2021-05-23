@@ -16,7 +16,7 @@ def _rootfs_impl(ctx):
     ctx.actions.run(
         outputs = [out],
         inputs = ctx.files.src,
-        executable = ctx.files._undocker[0],
+        executable = ctx.executable._undocker,
         arguments = [
             "rootfs",
             ctx.files.src[0].path,
@@ -24,14 +24,14 @@ def _rootfs_impl(ctx):
         ],
         mnemonic = "RootFS",
     )
-    return [DefaultInfo(
+    return DefaultInfo(
         files = depset([out]),
         runfiles = ctx.runfiles(files = ctx.files.src),
-    )]
+    )
 
 rootfs = rule(
+    _rootfs_impl,
     doc = "Generate a rootfs from a docker container image",
-    implementation = _rootfs_impl,
     attrs = {
         "src": _input_container,
         "_undocker": _undocker_cli,
@@ -43,7 +43,7 @@ def _lxcconfig_impl(ctx):
     ctx.actions.run(
         outputs = [out],
         inputs = ctx.files.src,
-        executable = ctx.files._undocker[0],
+        executable = ctx.executable._undocker,
         arguments = [
             "lxcconfig",
             ctx.files.src[0].path,
@@ -51,14 +51,14 @@ def _lxcconfig_impl(ctx):
         ],
         mnemonic = "LXCConfig",
     )
-    return [DefaultInfo(
+    return DefaultInfo(
         files = depset([out]),
         runfiles = ctx.runfiles(files = ctx.files.src),
-    )]
+    )
 
 lxcconfig = rule(
+    _lxcconfig_impl,
     doc = "Generate lxc config from a docker container image",
-    implementation = _lxcconfig_impl,
     attrs = {
         "src": _input_container,
         "_undocker": _undocker_cli,
