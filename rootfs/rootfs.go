@@ -75,6 +75,10 @@ func RootFS(in io.ReadSeeker, out io.Writer) (err error) {
 		return ErrBadManifest
 	}
 
+	if len(layerOffsets) != len(manifest[0].Layers) {
+		return ErrBadManifest
+	}
+
 	// phase 1.5: enumerate layers
 	layers := make([]int64, len(layerOffsets))
 	for i, name := range manifest[0].Layers {

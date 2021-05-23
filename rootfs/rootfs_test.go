@@ -97,35 +97,39 @@ func extract(t *testing.T, f io.Reader) []file {
 }
 
 func TestRootFS(t *testing.T) {
-	_layer0 := tarball{
+	layer0 := tarball{
 		dir{name: "/", uid: 0},
 		file{name: "/file", uid: 1, contents: []byte("from 0")},
 	}
 
-	_layer1 := tarball{
+	layer1 := tarball{
 		dir{name: "/", uid: 1},
 		file{name: "/file", uid: 0, contents: []byte("from 1")},
 	}
 
-	_image := tarball{
-		file{name: "layer1/layer.tar", contents: _layer1.bytes(t)},
-		file{name: "layer0/layer.tar", contents: _layer0.bytes(t)},
-		manifest{"layer0/layer.tar", "layer1/layer.tar"},
-	}
-
 	tests := []struct {
-		name  string
-		image tarball
-		want  []file
+		name    string
+		image   tarball
+		want    []file
+		wantErr string
 	}{
 		{
-			name:  "empty",
+			name:  "empty tarball",
 			image: tarball{manifest{}},
 			want:  []file{},
 		},
 		{
-			name:  "basic overwrite, 2 layers",
-			image: _image,
+			name:    "missing layer",
+			image:   tarball{manifest{"layer0/layer.tar"}},
+			wantErr: "bad or missing manifest.json",
+		},
+		{
+			name: "basic overwrite, 2 layers",
+			image: tarball{
+				file{name: "layer1/layer.tar", contents: layer1.bytes(t)},
+				file{name: "layer0/layer.tar", contents: layer0.bytes(t)},
+				manifest{"layer0/layer.tar", "layer1/layer.tar"},
+			},
 			want: []file{
 				{name: "/", uid: 1},
 				{name: "/file", uid: 0, contents: []byte("from 1")},
@@ -138,7 +142,12 @@ func TestRootFS(t *testing.T) {
 			in := bytes.NewReader(tt.image.bytes(t))
 			out := bytes.Buffer{}
 
-			require.NoError(t, RootFS(in, &out))
+			err := RootFS(in, &out)
+			if tt.wantErr != "" {
+				assert.EqualError(t, err, tt.wantErr)
+				return
+			}
+			require.NoError(t, err)
 			got := extract(t, &out)
 			assert.Equal(t, got, tt.want)
 		})
