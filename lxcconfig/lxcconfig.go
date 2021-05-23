@@ -73,9 +73,10 @@ func LXCConfig(rd io.ReadSeeker, wr io.Writer) error {
 }
 
 func docker2lxc(d dockerConfig) lxcConfig {
-	// cmd/entrypoint logic is copied from lxc-oci template
-	ep := strings.Join(d.Config.Entrypoint, " ")
-	cmd := strings.Join(d.Config.Cmd, " ")
+	// cmd/entrypoint logic is copied from lxc-oci template and adopted
+	// for simple double-argument quoting.
+	ep := quoted(d.Config.Entrypoint)
+	cmd := quoted(d.Config.Cmd)
 	if len(ep) == 0 {
 		ep = cmd
 		if len(ep) == 0 {
@@ -153,4 +154,16 @@ func parseJSON(rd io.ReadSeeker, offsets map[string]offsetSize, fname string, c 
 		return fmt.Errorf("decode %s: %w", fname, err)
 	}
 	return nil
+}
+
+func quoted(cmds []string) string {
+	ret := make([]string, len(cmds))
+	for i, cmd := range cmds {
+		if cmd == "" || strings.ContainsRune(cmd, ' ') {
+			ret[i] = `"` + cmd + `"`
+		} else {
+			ret[i] = cmd
+		}
+	}
+	return strings.Join(ret, " ")
 }

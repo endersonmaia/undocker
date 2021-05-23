@@ -48,7 +48,7 @@ func TestLXCConfig(t *testing.T) {
 			want: strings.Join([]string{
 				`lxc.include = LXC_TEMPLATE_CONFIG/common.conf`,
 				`lxc.architecture = amd64`,
-				`lxc.execute.cmd = '/entrypoint.sh /bin/sh -c echo foo'`,
+				`lxc.execute.cmd = '/entrypoint.sh /bin/sh -c "echo foo"'`,
 				`lxc.init.cwd = /x`,
 				`lxc.environment = LONGNAME="Foo Bar"`,
 				`lxc.environment = SHELL=/bin/tcsh`,
