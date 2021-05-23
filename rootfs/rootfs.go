@@ -38,10 +38,14 @@ func New(rd io.ReadSeeker) *RootFS {
 }
 
 // WriteTo writes a docker image to an open tarball.
-func (r *RootFS) WriteTo(wr io.Writer) (err error) {
+func (r *RootFS) WriteTo(w io.Writer) (n int64, err error) {
+	wr := &byteCounter{rw: w}
 	tr := tar.NewReader(r.rd)
 	tw := tar.NewWriter(wr)
-	defer func() { err = multierr.Append(err, tw.Close()) }()
+	defer func() {
+		err = multierr.Append(err, tw.Close())
+		n = wr.n
+	}()
 
 	// layerOffsets maps a layer name (a9b123c0daa/layer.tar) to it's offset
 	layerOffsets := map[string]int64{}
@@ -62,19 +66,19 @@ func (r *RootFS) WriteTo(wr io.Writer) (err error) {
 		case filepath.Clean(hdr.Name) == _manifestJSON:
 			dec := json.NewDecoder(tr)
 			if err := dec.Decode(&manifest); err != nil {
-				return fmt.Errorf("decode %s: %w", _manifestJSON, err)
+				return n, fmt.Errorf("decode %s: %w", _manifestJSON, err)
 			}
 		case strings.HasSuffix(hdr.Name, _layerSuffix):
 			here, err := r.rd.Seek(0, io.SeekCurrent)
 			if err != nil {
-				return err
+				return n, err
 			}
 			layerOffsets[hdr.Name] = here
 		}
 	}
 
 	if len(manifest) == 0 || len(layerOffsets) != len(manifest[0].Layers) {
-		return errBadManifest
+		return n, errBadManifest
 	}
 
 	// enumerate layers the way they would be laid down in the image
@@ -96,7 +100,7 @@ func (r *RootFS) WriteTo(wr io.Writer) (err error) {
 	// iterate over all files, construct `file2layer`, `whreaddir`, `wh`
 	for i, offset := range layers {
 		if _, err := r.rd.Seek(offset, io.SeekStart); err != nil {
-			return err
+			return n, err
 		}
 		tr = tar.NewReader(r.rd)
 		for {
@@ -105,7 +109,7 @@ func (r *RootFS) WriteTo(wr io.Writer) (err error) {
 				break
 			}
 			if err != nil {
-				return err
+				return n, err
 			}
 			if hdr.Typeflag == tar.TypeDir {
 				continue
@@ -137,7 +141,7 @@ func (r *RootFS) WriteTo(wr io.Writer) (err error) {
 	// iterate through all layers, all files, and write files.
 	for i, offset := range layers {
 		if _, err := r.rd.Seek(offset, io.SeekStart); err != nil {
-			return err
+			return n, err
 		}
 		tr = tar.NewReader(r.rd)
 		for {
@@ -146,7 +150,7 @@ func (r *RootFS) WriteTo(wr io.Writer) (err error) {
 				break
 			}
 			if err != nil {
-				return err
+				return n, err
 			}
 			if layer, ok := wh[hdr.Name]; ok && layer >= i {
 				continue
@@ -158,11 +162,11 @@ func (r *RootFS) WriteTo(wr io.Writer) (err error) {
 				continue
 			}
 			if err := writeFile(tr, tw, hdr); err != nil {
-				return err
+				return n, err
 			}
 		}
 	}
-	return nil
+	return n, nil
 }
 
 func writeFile(tr *tar.Reader, tw *tar.Writer, hdr *tar.Header) error {
@@ -210,4 +214,16 @@ func whiteoutDirs(whreaddir map[string]int, nlayers int) []*tree {
 		ret[i-1].Merge(ret[i])
 	}
 	return ret
+}
+
+// byteCounter is an io.Writer that counts bytes written to it
+type byteCounter struct {
+	rw io.Writer
+	n  int64
+}
+
+// Write writes to the underlying io.Writer and counts total written bytes
+func (b *byteCounter) Write(data []byte) (n int, err error) {
+	defer func() { b.n += int64(n) }()
+	return b.rw.Write(data)
 }
