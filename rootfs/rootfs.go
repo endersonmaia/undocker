@@ -25,7 +25,6 @@ var (
 )
 
 type dockerManifestJSON []struct {
-	Config string   `json:"Config,omitempty"`
 	Layers []string `json:"Layers"`
 }
 
@@ -86,14 +85,14 @@ func RootFS(in io.ReadSeeker, out io.Writer) (err error) {
 	// file2layer maps a filename to layer number (index in "layers")
 	file2layer := map[string]int{}
 
-	// whreaddir maps `wh..wh..opq` file to a layer.
+	// whreaddir maps `wh..wh..opq` file to a layer; see doc.go
 	whreaddir := map[string]int{}
 
 	// wh maps a filename to a layer until which it should be ignored,
-	// inclusively.
+	// inclusively; see doc.go
 	wh := map[string]int{}
 
-	// build up `file2layer`, `whreaddir`, `wh`
+	// iterate over all files, construct `file2layer`, `whreaddir`, `wh`
 	for i, offset := range layers {
 		if _, err := in.Seek(offset, io.SeekStart); err != nil {
 			return err
@@ -111,8 +110,9 @@ func RootFS(in io.ReadSeeker, out io.Writer) (err error) {
 				continue
 			}
 
-			// according to aufs documentation, whiteout files should be hardlinks.
-			// I saw at least one docker container using regular files for whiteout.
+			// according to aufs documentation, whiteout files should be
+			// hardlinks. I saw at least one docker container using regular
+			// files for whiteouts.
 			if hdr.Typeflag == tar.TypeLink || hdr.Typeflag == tar.TypeReg {
 				basename := filepath.Base(hdr.Name)
 				basedir := filepath.Dir(hdr.Name)
@@ -130,10 +130,10 @@ func RootFS(in io.ReadSeeker, out io.Writer) (err error) {
 		}
 	}
 
-	// construct directories to ignore, by layer.
+	// construct directories to whiteout, for each layer.
 	whIgnore := whiteoutDirs(whreaddir, len(layers))
 
-	// iterate through all layers and write files.
+	// iterate through all layers, all files, and write files.
 	for i, offset := range layers {
 		if _, err := in.Seek(offset, io.SeekStart); err != nil {
 			return err
