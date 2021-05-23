@@ -45,9 +45,14 @@ func TestRootFS(t *testing.T) {
 			want:  []extractable{},
 		},
 		{
+			name:    "no manifest",
+			image:   tarball{},
+			wantErr: "empty or missing manifest",
+		},
+		{
 			name:    "missing layer",
 			image:   tarball{manifest{"layer0/layer.tar"}},
-			wantErr: "bad or missing manifest.json",
+			wantErr: "layer0/layer.tar defined in manifest, missing in tarball",
 		},
 		{
 			name: "basic file overwrite, layer order mixed",

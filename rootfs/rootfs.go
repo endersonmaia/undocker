@@ -15,13 +15,13 @@ import (
 
 const (
 	_manifestJSON = "manifest.json"
-	_layerSuffix  = "/layer.tar"
+	_tarSuffix    = ".tar"
 	_whReaddir    = ".wh..wh..opq"
 	_whPrefix     = ".wh."
 )
 
 var (
-	errBadManifest = errors.New("bad or missing manifest.json")
+	errBadManifest = errors.New("bad manifest.json")
 )
 
 type (
@@ -63,7 +63,7 @@ func Flatten(rd io.ReadSeeker, w io.Writer) (err error) {
 			if err := dec.Decode(&manifest); err != nil {
 				return fmt.Errorf("decode %s: %w", _manifestJSON, err)
 			}
-		case strings.HasSuffix(hdr.Name, _layerSuffix):
+		case strings.HasSuffix(hdr.Name, _tarSuffix):
 			here, err := rd.Seek(0, io.SeekCurrent)
 			if err != nil {
 				return err
@@ -72,8 +72,8 @@ func Flatten(rd io.ReadSeeker, w io.Writer) (err error) {
 		}
 	}
 
-	if len(manifest) == 0 || len(layerOffsets) != len(manifest[0].Layers) {
-		return errBadManifest
+	if err := validateManifest(layerOffsets, manifest); err != nil {
+		return err
 	}
 
 	// enumerate layers the way they would be laid down in the image
@@ -226,6 +226,21 @@ func whiteoutDirs(whreaddir map[string]int, nlayers int) []*tree {
 		ret[i-1].Merge(ret[i])
 	}
 	return ret
+}
+
+// validateManifest
+func validateManifest(layerOffsets map[string]int64, manifest dockerManifestJSON) error {
+	if len(manifest) == 0 {
+		return fmt.Errorf("empty or missing manifest")
+	}
+
+	for _, layer := range manifest[0].Layers {
+		if _, ok := layerOffsets[layer]; !ok {
+			return fmt.Errorf("%s defined in manifest, missing in tarball", layer)
+		}
+	}
+
+	return nil
 }
 
 // openTargz creates a tar reader from a targzip or tar.
