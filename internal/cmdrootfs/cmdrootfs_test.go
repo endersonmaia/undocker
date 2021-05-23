@@ -3,6 +3,7 @@ package cmdrootfs
 import (
 	"bytes"
 	"io"
+	"io/ioutil"
 	"path/filepath"
 	"testing"
 
@@ -13,45 +14,58 @@ import (
 )
 
 func TestExecute(t *testing.T) {
-	dir := t.TempDir()
+	var _foo = []byte("foo foo")
 
 	tests := []struct {
 		name    string
-		in      []byte
+		fixture func(*testing.T, string)
 		infile  string
 		outfile string
-		want    []byte
 		wantErr string
 	}{
 		{
-			name:    "ok passthrough via stdout",
-			in:      []byte("foo"),
+			name:   "ok passthrough via stdout",
+			infile: "t10-in.txt",
+			fixture: func(t *testing.T, dir string) {
+				fname := filepath.Join(dir, "t10-in.txt")
+				require.NoError(t, ioutil.WriteFile(fname, _foo, 0644))
+			},
 			outfile: "-",
-			want:    []byte("foo"),
 		},
 		{
-			name:    "ok passthrough via file",
-			in:      []byte("foo"),
-			outfile: filepath.Join(dir, "t1.txt"),
-			want:    []byte("foo"),
+			name:   "ok passthrough via file",
+			infile: "t20-in.txt",
+			fixture: func(t *testing.T, dir string) {
+				fname := filepath.Join(dir, "t20-in.txt")
+				require.NoError(t, ioutil.WriteFile(fname, _foo, 0644))
+			},
+			outfile: "t20-out.txt",
 		},
 		{
 			name:    "infile does not exist",
-			infile:  filepath.Join(dir, "does", "not", "exist"),
-			wantErr: "open <...>/does/not/exist: enoent",
+			infile:  "t3-does-not-exist.txt",
+			wantErr: "^open .*t3-does-not-exist.txt: no such file or directory$",
 		},
 		{
 			name:    "outpath dir not writable",
-			outfile: filepath.Join(dir, "does", "not", "exist"),
-			wantErr: "create: stat <...>/does/not/exist: enoent",
+			outfile: filepath.Join("t4", "does", "not", "exist"),
+			wantErr: "^create: open .*/t4/does/not/exist: no such file or directory",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			dir := t.TempDir()
 			var stdout bytes.Buffer
 			c := &Command{BaseCommand: cmd.BaseCommand{Stdout: &stdout}}
-			c.PositionalArgs.Infile = goflags.Filename(tt.infile)
+			if tt.fixture != nil {
+				tt.fixture(t, dir)
+			}
+			if tt.outfile != "-" {
+				tt.outfile = filepath.Join(dir, tt.outfile)
+			}
+			inf := filepath.Join(dir, tt.infile)
+			c.PositionalArgs.Infile = goflags.Filename(inf)
 			c.PositionalArgs.Outfile = tt.outfile
 			c.rootfsNew = func(r io.ReadSeeker) io.WriterTo {
 				return &passthrough{r}
@@ -59,11 +73,19 @@ func TestExecute(t *testing.T) {
 
 			err := c.Execute(nil)
 			if tt.wantErr != "" {
-				assert.EqualError(t, err, tt.wantErr)
+				require.Error(t, err)
+				assert.Regexp(t, tt.wantErr, err.Error())
 				return
 			}
+			var out []byte
 			require.NoError(t, err)
-			assert.Equal(t, tt.want, stdout.Bytes())
+			if tt.outfile == "-" {
+				out = stdout.Bytes()
+			} else {
+				out, err = ioutil.ReadFile(tt.outfile)
+				require.NoError(t, err)
+			}
+			assert.Equal(t, []byte("foo foo"), out)
 		})
 	}
 }
