@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 
+     "github.com/motiejus/code/undocker/internal/bytecounter"
 	"go.uber.org/multierr"
 )
 
@@ -39,12 +40,12 @@ func New(rd io.ReadSeeker) *RootFS {
 
 // WriteTo writes a docker image to an open tarball.
 func (r *RootFS) WriteTo(w io.Writer) (n int64, err error) {
-	wr := &byteCounter{rw: w}
+	wr := bytecounter.New(w)
 	tr := tar.NewReader(r.rd)
 	tw := tar.NewWriter(wr)
 	defer func() {
 		err = multierr.Append(err, tw.Close())
-		n = wr.n
+		n = wr.N
 	}()
 
 	// layerOffsets maps a layer name (a9b123c0daa/layer.tar) to it's offset

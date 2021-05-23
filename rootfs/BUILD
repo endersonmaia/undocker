@@ -9,7 +9,10 @@ go_library(
     ],
     importpath = "github.com/motiejus/code/undocker/rootfs",
     visibility = ["//visibility:public"],
-    deps = ["@org_uber_go_multierr//:go_default_library"],
+    deps = [
+        "//src/undocker/internal/bytecounter:go_default_library",
+        "@org_uber_go_multierr//:go_default_library",
+    ],
 )
 
 go_test(
