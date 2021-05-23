@@ -6,6 +6,7 @@ import (
 
 	goflags "github.com/jessevdk/go-flags"
 	"github.com/motiejus/code/undocker/rootfs"
+	"go.uber.org/multierr"
 )
 
 type (
@@ -40,7 +41,7 @@ type cmdRootFS struct {
 	} `positional-args:"yes" required:"yes"`
 }
 
-func (r *cmdRootFS) Execute(args []string) error {
+func (r *cmdRootFS) Execute(args []string) (err error) {
 	if len(args) != 0 {
 		return errors.New("too many args")
 	}
@@ -49,12 +50,17 @@ func (r *cmdRootFS) Execute(args []string) error {
 	if err != nil {
 		return err
 	}
-	defer in.Close()
+	defer func() {
+		err = multierr.Append(err, in.Close())
+	}()
 
 	out, err := os.Create(string(r.PositionalArgs.Outfile))
 	if err != nil {
 		return err
 	}
-	defer out.Close()
+	defer func() {
+		err = multierr.Append(err, out.Close())
+	}()
+
 	return rootfs.RootFS(in, out)
 }
