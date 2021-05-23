@@ -7,9 +7,9 @@ import (
 
 // BaseCommand provides common fields to all commands.
 type BaseCommand struct {
-	Stdin  io.ReadCloser
-	Stdout io.WriteCloser
-	Stderr io.WriteCloser
+	Stdin  io.Reader
+	Stdout io.Writer
+	Stderr io.Writer
 }
 
 // Init initializes BaseCommand with default arguments
