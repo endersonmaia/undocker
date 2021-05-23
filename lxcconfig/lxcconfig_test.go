@@ -13,7 +13,6 @@ import (
 )
 
 func TestLXCConfig(t *testing.T) {
-
 	tests := []struct {
 		name   string
 		docker dockerConfig

@@ -27,11 +27,6 @@ var (
 )
 
 type (
-	// RootFS accepts a docker layer tarball and flattens it.
-	RootFS struct {
-		rd io.ReadSeeker
-	}
-
 	dockerManifestJSON []struct {
 		Layers []string `json:"Layers"`
 	}
@@ -42,14 +37,11 @@ type (
 	}
 )
 
-// New creates a new RootFS'er.
-func New(rd io.ReadSeeker) *RootFS {
-	return &RootFS{rd: rd}
-}
-
-// Flatten flattens a docker image to an open tarball.
-func (r *RootFS) Flatten(w io.Writer) (err error) {
-	tr := tar.NewReader(r.rd)
+// Flatten flattens a docker image to a tarball. The underlying io.Writer
+// should be an open file handle, which the caller is responsible for closing
+// themselves
+func Flatten(rd io.ReadSeeker, w io.Writer) (err error) {
+	tr := tar.NewReader(rd)
 	var closer func() error
 
 	// layerOffsets maps a layer name (a9b123c0daa/layer.tar) to it's offset
@@ -74,7 +66,7 @@ func (r *RootFS) Flatten(w io.Writer) (err error) {
 				return fmt.Errorf("decode %s: %w", _manifestJSON, err)
 			}
 		case strings.HasSuffix(hdr.Name, _layerSuffix):
-			here, err := r.rd.Seek(0, io.SeekCurrent)
+			here, err := rd.Seek(0, io.SeekCurrent)
 			if err != nil {
 				return err
 			}
@@ -107,10 +99,10 @@ func (r *RootFS) Flatten(w io.Writer) (err error) {
 
 	// iterate over all files, construct `file2layer`, `whreaddir`, `wh`
 	for i, no := range layers {
-		if _, err := r.rd.Seek(no.offset, io.SeekStart); err != nil {
+		if _, err := rd.Seek(no.offset, io.SeekStart); err != nil {
 			return err
 		}
-		tr, closer = openTargz(r.rd)
+		tr, closer = openTargz(rd)
 		for {
 			hdr, err := tr.Next()
 			if err == io.EOF {
@@ -154,10 +146,10 @@ func (r *RootFS) Flatten(w io.Writer) (err error) {
 	}()
 	// iterate through all layers, all files, and write files.
 	for i, no := range layers {
-		if _, err := r.rd.Seek(no.offset, io.SeekStart); err != nil {
+		if _, err := rd.Seek(no.offset, io.SeekStart); err != nil {
 			return err
 		}
-		tr, closer = openTargz(r.rd)
+		tr, closer = openTargz(rd)
 		for {
 			hdr, err := tr.Next()
 			if err == io.EOF {

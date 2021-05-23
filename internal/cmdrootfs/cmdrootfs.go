@@ -13,11 +13,6 @@ import (
 )
 
 type (
-	flattener interface {
-		Flatten(io.Writer) error
-	}
-
-	rootfsFactory func(io.ReadSeeker) flattener
 
 	// Command is "rootfs" command
 	Command struct {
@@ -28,7 +23,7 @@ type (
 			Outfile string           `long:"outfile" description:"Output path, stdout is '-'"`
 		} `positional-args:"yes" required:"yes"`
 
-		rootfsNew rootfsFactory
+		flattener func(io.ReadSeeker, io.Writer) error
 	}
 )
 
@@ -37,7 +32,7 @@ func (c *Command) Execute(args []string) (err error) {
 	if len(args) != 0 {
 		return errors.New("too many args")
 	}
-	if c.rootfsNew == nil {
+	if c.flattener == nil {
 		c.init()
 	}
 
@@ -59,7 +54,7 @@ func (c *Command) Execute(args []string) (err error) {
 		out = outf
 	}
 
-	return c.rootfsNew(rd).Flatten(out)
+	return c.flattener(rd, out)
 }
 
 // init() initializes Command with the default options.
@@ -68,7 +63,5 @@ func (c *Command) Execute(args []string) (err error) {
 // command will initialize itself.
 func (c *Command) init() {
 	c.BaseCommand.Init()
-	c.rootfsNew = func(r io.ReadSeeker) flattener {
-		return rootfs.New(r)
-	}
+	c.flattener = rootfs.Flatten
 }
