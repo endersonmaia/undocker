@@ -5,10 +5,8 @@ import (
 	"io"
 	"io/ioutil"
 	"path/filepath"
+	"regexp"
 	"testing"
-
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func TestExecute(t *testing.T) {
@@ -26,7 +24,9 @@ func TestExecute(t *testing.T) {
 			infile: "t10-in.txt",
 			fixture: func(t *testing.T, dir string) {
 				fname := filepath.Join(dir, "t10-in.txt")
-				require.NoError(t, ioutil.WriteFile(fname, _foo, 0644))
+				if err := ioutil.WriteFile(fname, _foo, 0644); err != nil {
+					t.Fatalf("unexpected error: %v", err)
+				}
 			},
 			outfile: "-",
 		},
@@ -35,7 +35,9 @@ func TestExecute(t *testing.T) {
 			infile: "t20-in.txt",
 			fixture: func(t *testing.T, dir string) {
 				fname := filepath.Join(dir, "t20-in.txt")
-				require.NoError(t, ioutil.WriteFile(fname, _foo, 0644))
+				if err := ioutil.WriteFile(fname, _foo, 0644); err != nil {
+					t.Fatalf("unexpected error: %v", err)
+				}
 			},
 			outfile: "t20-out.txt",
 		},
@@ -67,19 +69,30 @@ func TestExecute(t *testing.T) {
 
 			err := c.execute(inf, tt.outfile)
 			if tt.wantErr != "" {
-				require.Error(t, err)
-				assert.Regexp(t, tt.wantErr, err.Error())
+				if err == nil {
+					t.Fatal("expected error, got nil")
+				}
+				r := regexp.MustCompile(tt.wantErr)
+				if r.FindStringIndex(err.Error()) == nil {
+					t.Errorf("%s not found in %s", tt.wantErr, err.Error())
+				}
 				return
 			}
 			var out []byte
-			require.NoError(t, err)
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
 			if tt.outfile == "-" {
 				out = stdout.Bytes()
 			} else {
 				out, err = ioutil.ReadFile(tt.outfile)
-				require.NoError(t, err)
+				if err != nil {
+					t.Fatalf("unexpected error: %v", err)
+				}
 			}
-			assert.Equal(t, []byte("foo foo"), out)
+			if !bytes.Equal([]byte("foo foo"), out) {
+				t.Errorf("out != foo foo: %s", string(out))
+			}
 		})
 	}
 }

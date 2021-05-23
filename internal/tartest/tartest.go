@@ -7,8 +7,6 @@ import (
 	"fmt"
 	"io"
 	"testing"
-
-	"github.com/stretchr/testify/require"
 )
 
 type (
@@ -122,7 +120,9 @@ func Extract(t *testing.T, r io.Reader) []Extractable {
 		if err == io.EOF {
 			break
 		}
-		require.NoError(t, err)
+		if err != nil {
+			t.Errorf("expected nil error: %v", err)
+		}
 
 		var elem Extractable
 		switch hdr.Typeflag {

@@ -4,10 +4,8 @@ import (
 	"bytes"
 	"compress/gzip"
 	"io"
+	"reflect"
 	"testing"
-
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func TestTarball(t *testing.T) {
@@ -26,7 +24,10 @@ func TestTarball(t *testing.T) {
 		Dir{Name: "bin"},
 		Hardlink{Name: "entrypoint2"},
 	}
-	assert.Equal(t, want, got)
+	if !reflect.DeepEqual(want, got) {
+		t.Errorf("tarball mismatch. want: %+v, got: %+v", want, got)
+	}
+
 }
 
 func TestGzip(t *testing.T) {
@@ -34,10 +35,14 @@ func TestGzip(t *testing.T) {
 	tbuf := tb.Buffer()
 
 	tgz, err := gzip.NewReader(tb.Gzip())
-	require.NoError(t, err)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
 	var uncompressed bytes.Buffer
-	_, err = io.Copy(&uncompressed, tgz)
-	require.NoError(t, err)
-	assert.Equal(t, tbuf.Bytes(), uncompressed.Bytes())
-
+	if _, err := io.Copy(&uncompressed, tgz); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !bytes.Equal(tbuf.Bytes(), uncompressed.Bytes()) {
+		t.Errorf("tbuf and uncompressed bytes mismatch")
+	}
 }

@@ -4,11 +4,10 @@ import (
 	"archive/tar"
 	"bytes"
 	"encoding/json"
+	"reflect"
 	"testing"
 
 	"git.sr.ht/~motiejus/code/undocker/internal/tartest"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 type (
@@ -193,13 +192,22 @@ func TestRootFS(t *testing.T) {
 
 			err := Flatten(in, &out)
 			if tt.wantErr != "" {
-				assert.EqualError(t, err, tt.wantErr)
+				if err == nil {
+					t.Fatal("expected error, got nil")
+				}
+				if tt.wantErr != err.Error() {
+					t.Errorf("want != got: %s != %s", tt.wantErr, err.Error())
+				}
 				return
 			}
 			outb := out.Bytes()
-			require.NoError(t, err)
+			if err != nil {
+				t.Fatal("expected error, got nil")
+			}
 			got := tartest.Extract(t, bytes.NewReader(outb))
-			assert.Equal(t, tt.want, got)
+			if !reflect.DeepEqual(tt.want, got) {
+				t.Errorf("want != got: %v != %v", tt.want, got)
+			}
 		})
 	}
 }

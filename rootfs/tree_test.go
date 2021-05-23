@@ -37,15 +37,17 @@ func TestTree(t *testing.T) {
 
 			for _, path := range tt.matchTrue {
 				t.Run(path, func(t *testing.T) {
-					assert.True(t, tree.HasPrefix(path),
-						"expected %s to be a prefix of %s", path, tree)
+					if !tree.HasPrefix(path) {
+						t.Errorf("expected %s to be a prefix of %s", path, tree)
+					}
 				})
 			}
 
 			for _, path := range tt.matchFalse {
 				t.Run(path, func(t *testing.T) {
-					assert.False(t, tree.HasPrefix(path),
-						"expected %s to not be a prefix of %s", path, tree)
+					if tree.HasPrefix(path) {
+						t.Errorf("expected %s to not be a prefix of %s", path, tree)
+					}
 				})
 			}
 		})
@@ -56,8 +58,14 @@ func TestTreeMerge(t *testing.T) {
 	tree1 := newTree("bin/ar", "var/cache/apt")
 	tree2 := newTree("bin/ar", "bin/busybox", "usr/share/doc")
 	tree1.Merge(tree2)
-	assert.Equal(t, "./bin/ar:./bin/busybox:./usr/share/doc:./var/cache/apt", tree1.String())
-	assert.Equal(t, "./bin/ar:./bin/busybox:./usr/share/doc", tree2.String())
+	want1 := "./bin/ar:./bin/busybox:./usr/share/doc:./var/cache/apt"
+	if got := tree1.String(); want1 != got {
+		t.Errorf("want != got: %q != %q", want1, got)
+	}
+	want2 := "./bin/ar:./bin/busybox:./usr/share/doc"
+	if got := tree2.String(); want2 != got {
+		t.Errorf("want != got: %q != %q", want2, got)
+	}
 }
 
 func TestString(t *testing.T) {
