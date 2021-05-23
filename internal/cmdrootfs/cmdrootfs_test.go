@@ -8,7 +8,6 @@ import (
 	"testing"
 
 	goflags "github.com/jessevdk/go-flags"
-	"github.com/motiejus/code/undocker/internal/cmd"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -57,7 +56,7 @@ func TestExecute(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			dir := t.TempDir()
 			var stdout bytes.Buffer
-			c := &Command{BaseCommand: cmd.BaseCommand{Stdout: &stdout}}
+			c := &Command{Stdout: &stdout}
 			if tt.fixture != nil {
 				tt.fixture(t, dir)
 			}

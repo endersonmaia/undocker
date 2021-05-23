@@ -2,7 +2,7 @@
 // tarball. It will go trough all layers in order and copy every file to the
 // destination archive.
 //
-// Except it will also reasonably process those files.
+// It will also reasonably process those files.
 //
 // == Non-directory will be copied only once ==
 // A non-directory will be copied only once, only from within it's past

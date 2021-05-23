@@ -7,33 +7,36 @@ import (
 	"os"
 
 	goflags "github.com/jessevdk/go-flags"
-	"github.com/motiejus/code/undocker/internal/cmd"
 	"github.com/motiejus/code/undocker/rootfs"
 	"go.uber.org/multierr"
 )
 
 type (
-
-	// Command is "rootfs" command
 	Command struct {
-		cmd.BaseCommand
+		flattener func(io.ReadSeeker, io.Writer) error
+		Stdout    io.Writer
 
 		PositionalArgs struct {
-			Infile  goflags.Filename `long:"infile" description:"Input tarball"`
-			Outfile string           `long:"outfile" description:"Output path, stdout is '-'"`
+			Infile  goflags.Filename `long:"infile" desc:"Input tarball"`
+			Outfile string           `long:"outfile" desc:"Output path, stdout is '-'"`
 		} `positional-args:"yes" required:"yes"`
-
-		flattener func(io.ReadSeeker, io.Writer) error
 	}
 )
+
+func NewCommand() *Command {
+	return &Command{
+		flattener: rootfs.Flatten,
+		Stdout:    os.Stdout,
+	}
+}
+
+func (*Command) ShortDesc() string { return "Flatten a docker container image to a tarball" }
+func (*Command) LongDesc() string  { return "" }
 
 // Execute executes rootfs Command
 func (c *Command) Execute(args []string) (err error) {
 	if len(args) != 0 {
 		return errors.New("too many args")
-	}
-	if c.flattener == nil {
-		c.init()
 	}
 
 	rd, err := os.Open(string(c.PositionalArgs.Infile))
@@ -55,13 +58,4 @@ func (c *Command) Execute(args []string) (err error) {
 	}
 
 	return c.flattener(rd, out)
-}
-
-// init() initializes Command with the default options.
-//
-// Since constructors for sub-commands requires lots of boilerplate,
-// command will initialize itself.
-func (c *Command) init() {
-	c.BaseCommand.Init()
-	c.flattener = rootfs.Flatten
 }

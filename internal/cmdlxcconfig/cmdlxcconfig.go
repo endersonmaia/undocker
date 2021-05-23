@@ -2,10 +2,11 @@ package cmdlxcconfig
 
 import (
 	"errors"
+	"fmt"
+	"io"
 	"os"
 
 	goflags "github.com/jessevdk/go-flags"
-	"github.com/motiejus/code/undocker/internal/cmd"
 	"github.com/motiejus/code/undocker/lxcconfig"
 	"go.uber.org/multierr"
 )
@@ -13,7 +14,8 @@ import (
 // Command is "lxcconfig" command
 type (
 	Command struct {
-		cmd.BaseCommand
+		Stdout io.Writer
+
 		PositionalArgs struct {
 			Infile  goflags.Filename `long:"infile" description:"Input tarball"`
 			Outfile string           `long:"outfile" description:"Output path, stdout is '-'"`
@@ -21,9 +23,17 @@ type (
 	}
 )
 
+func NewCommand() *Command {
+	return &Command{
+		Stdout: os.Stdout,
+	}
+}
+
+func (*Command) ShortDesc() string { return "Create an LXC-compatible container configuration" }
+func (*Command) LongDesc() string  { return "" }
+
 // Execute executes lxcconfig Command
 func (c *Command) Execute(args []string) (err error) {
-	c.BaseCommand.Init()
 	if len(args) != 0 {
 		return errors.New("too many args")
 	}
@@ -34,17 +44,18 @@ func (c *Command) Execute(args []string) (err error) {
 	}
 	defer func() { err = multierr.Append(err, rd.Close()) }()
 
-	var out *os.File
+	var out io.Writer
 	outf := string(c.PositionalArgs.Outfile)
-	if outf == "-" {
-		out = os.Stdout
+	if fname := string(c.PositionalArgs.Outfile); fname == "-" {
+		out = c.Stdout
 	} else {
-		out, err = os.Create(outf)
+		outf, err := os.Create(outf)
 		if err != nil {
-			return err
+			return fmt.Errorf("create: %w", err)
 		}
+		defer func() { err = multierr.Append(err, outf.Close()) }()
+		out = outf
 	}
-	defer func() { err = multierr.Append(err, out.Close()) }()
 
 	return lxcconfig.LXCConfig(rd, out)
 }
