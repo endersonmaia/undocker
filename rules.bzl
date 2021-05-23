@@ -34,7 +34,7 @@ rootfs = rule(
     implementation = _rootfs_impl,
     attrs = {
         "src": _input_container,
-        "_undocker": _undocker,
+        "_undocker": _undocker_cli,
     },
 )
 
@@ -61,6 +61,6 @@ lxcconfig = rule(
     implementation = _lxcconfig_impl,
     attrs = {
         "src": _input_container,
-        "_undocker": _undocker,
+        "_undocker": _undocker_cli,
     },
 )
