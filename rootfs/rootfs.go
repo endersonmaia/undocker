@@ -50,14 +50,8 @@ func New(rd io.ReadSeeker) *RootFS {
 
 // WriteTo writes a docker image to an open tarball.
 func (r *RootFS) WriteTo(w io.Writer) (n int64, err error) {
-	wr := bytecounter.New(w)
 	tr := tar.NewReader(r.rd)
-	tw := tar.NewWriter(wr)
 	var closer func() error
-	defer func() {
-		err = multierr.Append(err, tw.Close())
-		n = wr.N
-	}()
 
 	// layerOffsets maps a layer name (a9b123c0daa/layer.tar) to it's offset
 	layerOffsets := map[string]int64{}
@@ -155,6 +149,12 @@ func (r *RootFS) WriteTo(w io.Writer) (n int64, err error) {
 	// construct directories to whiteout, for each layer.
 	whIgnore := whiteoutDirs(whreaddir, len(layers))
 
+	wr := bytecounter.New(w)
+	tw := tar.NewWriter(wr)
+	defer func() {
+		err = multierr.Append(err, tw.Close())
+		n = wr.N
+	}()
 	// iterate through all layers, all files, and write files.
 	for i, no := range layers {
 		if _, err := r.rd.Seek(no.offset, io.SeekStart); err != nil {
