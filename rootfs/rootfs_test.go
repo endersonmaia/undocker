@@ -1,28 +1,39 @@
 package rootfs
 
 import (
-	"archive/tar"
 	"bytes"
-	"encoding/json"
-	"io"
 	"testing"
 
+	"github.com/motiejus/code/undocker/rootfs/rootfstest"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
+type (
+	file        = rootfstest.File
+	dir         = rootfstest.Dir
+	hardlink    = rootfstest.Hardlink
+	manifest    = rootfstest.Manifest
+	extractable = rootfstest.Extractable
+	tarball     = rootfstest.Tarball
+)
+
+var (
+	extract = rootfstest.Extract
+)
+
 func TestRootFS(t *testing.T) {
 	layer0 := tarball{
-		dir{name: "/", uid: 0},
-		file{name: "/file", uid: 0, contents: bytes.NewBufferString("from 0")},
+		dir{Name: "/", Uid: 0},
+		file{Name: "/file", Uid: 0, Contents: bytes.NewBufferString("from 0")},
 	}
 
 	layer1 := tarball{
-		file{name: "/file", uid: 1, contents: bytes.NewBufferString("from 1")},
+		file{Name: "/file", Uid: 1, Contents: bytes.NewBufferString("from 1")},
 	}
 
 	layer2 := tarball{
-		dir{name: "/", uid: 2},
+		dir{Name: "/", Uid: 2},
 	}
 
 	tests := []struct {
@@ -44,60 +55,60 @@ func TestRootFS(t *testing.T) {
 		{
 			name: "basic file overwrite, layer order mixed",
 			image: tarball{
-				file{name: "layer1/layer.tar", contents: layer1},
-				file{name: "layer0/layer.tar", contents: layer0},
+				file{Name: "layer1/layer.tar", Contents: layer1},
+				file{Name: "layer0/layer.tar", Contents: layer0},
 				manifest{"layer0/layer.tar", "layer1/layer.tar"},
 			},
 			want: []extractable{
-				dir{name: "/", uid: 0},
-				file{name: "/file", uid: 1, contents: bytes.NewBufferString("from 1")},
+				dir{Name: "/", Uid: 0},
+				file{Name: "/file", Uid: 1, Contents: bytes.NewBufferString("from 1")},
 			},
 		},
 		{
 			name: "directory overwrite retains original dir",
 			image: tarball{
-				file{name: "layer2/layer.tar", contents: layer2},
-				file{name: "layer0/layer.tar", contents: layer0},
-				file{name: "layer1/layer.tar", contents: layer1},
+				file{Name: "layer2/layer.tar", Contents: layer2},
+				file{Name: "layer0/layer.tar", Contents: layer0},
+				file{Name: "layer1/layer.tar", Contents: layer1},
 				manifest{"layer0/layer.tar", "layer1/layer.tar", "layer2/layer.tar"},
 			},
 			want: []extractable{
-				dir{name: "/", uid: 0},
-				file{name: "/file", uid: 1, contents: bytes.NewBufferString("from 1")},
-				dir{name: "/", uid: 2},
+				dir{Name: "/", Uid: 0},
+				file{Name: "/file", Uid: 1, Contents: bytes.NewBufferString("from 1")},
+				dir{Name: "/", Uid: 2},
 			},
 		},
 		{
 			name: "simple whiteout",
 			image: tarball{
-				file{name: "layer0/layer.tar", contents: tarball{
-					file{name: "filea"},
-					file{name: "fileb"},
-					dir{name: "dira"},
-					dir{name: "dirb"},
+				file{Name: "layer0/layer.tar", Contents: tarball{
+					file{Name: "filea"},
+					file{Name: "fileb"},
+					dir{Name: "dira"},
+					dir{Name: "dirb"},
 				}},
-				file{name: "layer1/layer.tar", contents: tarball{
-					hardlink{name: ".wh.filea"},
-					hardlink{name: ".wh.dira"},
+				file{Name: "layer1/layer.tar", Contents: tarball{
+					hardlink{Name: ".wh.filea"},
+					hardlink{Name: ".wh.dira"},
 				}},
 				manifest{"layer0/layer.tar", "layer1/layer.tar"},
 			},
 			want: []extractable{
-				file{name: "fileb"},
-				dir{name: "dirb"},
+				file{Name: "fileb"},
+				dir{Name: "dirb"},
 			},
 		},
 		{
 			name: "whiteout with override",
 			image: tarball{
-				file{name: "layer0/layer.tar", contents: tarball{
-					file{name: "file", contents: bytes.NewBufferString("from 0")},
+				file{Name: "layer0/layer.tar", Contents: tarball{
+					file{Name: "file", Contents: bytes.NewBufferString("from 0")},
 				}},
-				file{name: "layer1/layer.tar", contents: tarball{
-					hardlink{name: ".wh.file"},
+				file{Name: "layer1/layer.tar", Contents: tarball{
+					hardlink{Name: ".wh.file"},
 				}},
-				file{name: "layer2/layer.tar", contents: tarball{
-					file{name: "file", contents: bytes.NewBufferString("from 3")},
+				file{Name: "layer2/layer.tar", Contents: tarball{
+					file{Name: "file", Contents: bytes.NewBufferString("from 3")},
 				}},
 				manifest{
 					"layer0/layer.tar",
@@ -106,42 +117,42 @@ func TestRootFS(t *testing.T) {
 				},
 			},
 			want: []extractable{
-				file{name: "file", contents: bytes.NewBufferString("from 3")},
+				file{Name: "file", Contents: bytes.NewBufferString("from 3")},
 			},
 		},
 		{
 			name: "directories do not whiteout",
 			image: tarball{
-				file{name: "layer0/layer.tar", contents: tarball{
-					dir{name: "dir"},
+				file{Name: "layer0/layer.tar", Contents: tarball{
+					dir{Name: "dir"},
 				}},
-				file{name: "layer1/layer.tar", contents: tarball{
-					dir{name: ".wh.dir"},
+				file{Name: "layer1/layer.tar", Contents: tarball{
+					dir{Name: ".wh.dir"},
 				}},
 				manifest{"layer0/layer.tar", "layer1/layer.tar"},
 			},
 			want: []extractable{
-				dir{name: "dir"},
-				dir{name: ".wh.dir"},
+				dir{Name: "dir"},
+				dir{Name: ".wh.dir"},
 			},
 		},
 		{
 			name: "simple readdir whiteout",
 			image: tarball{
-				file{name: "layer0/layer.tar", contents: tarball{
-					dir{name: "a"},
-					file{name: "a/filea"},
+				file{Name: "layer0/layer.tar", Contents: tarball{
+					dir{Name: "a"},
+					file{Name: "a/filea"},
 				}},
-				file{name: "layer1/layer.tar", contents: tarball{
-					dir{name: "a"},
-					file{name: "a/fileb"},
-					hardlink{name: "a/.wh..wh..opq"},
+				file{Name: "layer1/layer.tar", Contents: tarball{
+					dir{Name: "a"},
+					file{Name: "a/fileb"},
+					hardlink{Name: "a/.wh..wh..opq"},
 				}},
 				manifest{"layer0/layer.tar", "layer1/layer.tar"},
 			},
 			want: []extractable{
-				dir{name: "a"},
-				file{name: "a/fileb"},
+				dir{Name: "a"},
+				file{Name: "a/fileb"},
 			},
 		},
 	}
@@ -161,124 +172,4 @@ func TestRootFS(t *testing.T) {
 			assert.Equal(t, tt.want, got)
 		})
 	}
-}
-
-// Helpers
-
-type tarrer interface {
-	tar(*tar.Writer)
-}
-
-type byter interface {
-	Bytes() []byte
-}
-
-type tarball []tarrer
-
-func (tb tarball) Bytes() []byte {
-	buf := bytes.Buffer{}
-	tw := tar.NewWriter(&buf)
-	for _, member := range tb {
-		member.tar(tw)
-	}
-	tw.Close()
-	return buf.Bytes()
-}
-
-// extractable is an empty interface for comparing extracted outputs in tests.
-// Using that just to avoid the ugly `interface{}`.
-type extractable interface{}
-
-type dir struct {
-	name string
-	uid  int
-}
-
-func (d dir) tar(tw *tar.Writer) {
-	hdr := &tar.Header{
-		Typeflag: tar.TypeDir,
-		Name:     d.name,
-		Mode:     0644,
-		Uid:      d.uid,
-	}
-	tw.WriteHeader(hdr)
-}
-
-type file struct {
-	name     string
-	uid      int
-	contents byter
-}
-
-func (f file) tar(tw *tar.Writer) {
-	var contentbytes []byte
-	if f.contents != nil {
-		contentbytes = f.contents.Bytes()
-	}
-	hdr := &tar.Header{
-		Typeflag: tar.TypeReg,
-		Name:     f.name,
-		Mode:     0644,
-		Uid:      f.uid,
-		Size:     int64(len(contentbytes)),
-	}
-	tw.WriteHeader(hdr)
-	tw.Write(contentbytes)
-}
-
-type manifest []string
-
-func (m manifest) tar(tw *tar.Writer) {
-	b, err := json.Marshal(dockerManifestJSON{{Layers: m}})
-	if err != nil {
-		panic("testerr")
-	}
-	file{
-		name:     "manifest.json",
-		uid:      0,
-		contents: bytes.NewBuffer(b),
-	}.tar(tw)
-}
-
-type hardlink struct {
-	name string
-	uid  int
-}
-
-func (h hardlink) tar(tw *tar.Writer) {
-	tw.WriteHeader(&tar.Header{
-		Typeflag: tar.TypeLink,
-		Name:     h.name,
-		Mode:     0644,
-		Uid:      h.uid,
-	})
-}
-
-func extract(t *testing.T, r io.Reader) []extractable {
-	t.Helper()
-	ret := []extractable{}
-	tr := tar.NewReader(r)
-	for {
-		hdr, err := tr.Next()
-		if err == io.EOF {
-			break
-		}
-		require.NoError(t, err)
-
-		var elem extractable
-		switch hdr.Typeflag {
-		case tar.TypeDir:
-			elem = dir{name: hdr.Name, uid: hdr.Uid}
-		case tar.TypeReg:
-			f := file{name: hdr.Name, uid: hdr.Uid}
-			if hdr.Size > 0 {
-				var buf bytes.Buffer
-				io.Copy(&buf, tr)
-				f.contents = &buf
-			}
-			elem = f
-		}
-		ret = append(ret, elem)
-	}
-	return ret
 }
