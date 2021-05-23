@@ -1,5 +1,7 @@
 load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
 load("//src/undocker:rules.bzl", "rootfs")
+load("@io_bazel_rules_docker//container:container.bzl", "container_bundle",
+)
 
 go_library(
     name = "go_default_library",
@@ -17,4 +19,15 @@ go_binary(
     name = "undocker",
     embed = [":go_default_library"],
     visibility = ["//visibility:public"],
+)
+
+container_bundle(
+    name="alpine",
+    images={"base": "@alpine//image"},
+)
+
+rootfs(
+    name="alpine-rootfs1",
+    src=":alpine.tar",
+    output="alpine-rootfs.tar",
 )

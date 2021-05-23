@@ -1,22 +1,27 @@
 def _rootfs_impl(ctx):
+    output = ctx.outputs.output
     ctx.actions.run(
-        executable =  ctx.files._undocker,
+        outputs = [output],
+        executable = ctx.files._undocker[0],
         arguments = [
-            ctx.attr.src,
-            ctx.output,
+            ctx.attr.src.path,
+            output.path,
         ],
     )
 
 rootfs = rule(
     doc = "Generate a rootfs from a docker container image",
     implementation = _rootfs_impl,
+    outputs = {
+        "out": "%{name}.tar",
+    },
     attrs = {
         "src": attr.label(
             doc = "Input container tarball",
             mandatory = True,
             allow_single_file = [".tar"],
         ),
-        "out": attr.output(
+        "output": attr.output(
             doc = "Output rootfs tarball",
             mandatory = True,
         ),
