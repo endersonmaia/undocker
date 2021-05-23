@@ -20,7 +20,7 @@ var (
 		template.New("lxcconfig").Parse("" +
 			"lxc.include = LXC_TEMPLATE_CONFIG/common.conf\n" +
 			"lxc.architecture = {{ .Architecture }}\n" +
-			"lxc.execute.cmd = '{{ .Cmd }}'\n" +
+			"lxc.init.cmd = '{{ .Cmd }}'\n" +
 			"{{ if .Cwd }}lxc.init.cwd = {{ .Cwd }}\n{{ end }}" +
 			"{{ range .Env }}lxc.environment = {{ . }}\n{{ end }}"))
 	errBadManifest = errors.New("bad or missing manifest.json")
