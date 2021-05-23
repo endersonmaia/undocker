@@ -6,6 +6,7 @@ go_library(
     importpath = "github.com/motiejus/code/undocker/internal/cmdrootfs",
     visibility = ["//src/undocker:__subpackages__"],
     deps = [
+        "//src/undocker/internal/cmd:go_default_library",
         "//src/undocker/rootfs:go_default_library",
         "@com_github_jessevdk_go_flags//:go_default_library",
         "@com_github_ulikunitz_xz//:go_default_library",

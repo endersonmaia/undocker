@@ -6,6 +6,7 @@ import (
 	"os"
 
 	goflags "github.com/jessevdk/go-flags"
+	"github.com/motiejus/code/undocker/internal/cmd"
 	"github.com/motiejus/code/undocker/rootfs"
 	"github.com/ulikunitz/xz"
 	"go.uber.org/multierr"
@@ -13,6 +14,8 @@ import (
 
 // Command is "rootfs" command
 type Command struct {
+	cmd.BaseCommand
+
 	PositionalArgs struct {
 		Infile  goflags.Filename `long:"infile" description:"Input tarball"`
 		Outfile string           `long:"outfile" description:"Output path, stdout is '-'"`
@@ -29,9 +32,7 @@ func (c *Command) Execute(args []string) (err error) {
 		return errors.New("too many args")
 	}
 	if c.rootfsNew == nil {
-		c.rootfsNew = func(r io.ReadSeeker) io.WriterTo {
-			return rootfs.New(r)
-		}
+		c.init()
 	}
 
 	rd, err := os.Open(string(c.PositionalArgs.Infile))
@@ -66,4 +67,15 @@ func (c *Command) Execute(args []string) (err error) {
 		return err
 	}
 	return nil
+}
+
+// init() initializes Command with the default options.
+//
+// Since constructors for sub-commands requires lots of boilerplate,
+// command will initialize itself.
+func (c *Command) init() {
+	c.BaseCommand.Init()
+	c.rootfsNew = func(r io.ReadSeeker) io.WriterTo {
+		return rootfs.New(r)
+	}
 }
