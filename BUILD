@@ -7,10 +7,7 @@ go_library(
     srcs = ["main.go"],
     importpath = "git.sr.ht/~motiejus/code/undocker",
     visibility = ["//visibility:private"],
-    deps = [
-        "//src/undocker/rootfs:go_default_library",
-        "@com_github_jessevdk_go_flags//:go_default_library",
-    ],
+    deps = ["//src/undocker/rootfs:go_default_library"],
 )
 
 go_binary(
@@ -24,7 +21,6 @@ go_test(
     srcs = ["main_test.go"],
     embed = [":go_default_library"],
     deps = [
-        "@com_github_jessevdk_go_flags//:go_default_library",
         "@com_github_stretchr_testify//assert:go_default_library",
         "@com_github_stretchr_testify//require:go_default_library",
     ],

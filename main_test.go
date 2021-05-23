@@ -7,13 +7,11 @@ import (
 	"path/filepath"
 	"testing"
 
-	goflags "github.com/jessevdk/go-flags"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestExecute(t *testing.T) {
-	assert.False(t, true)
 	var _foo = []byte("foo foo")
 
 	tests := []struct {
@@ -65,11 +63,9 @@ func TestExecute(t *testing.T) {
 				tt.outfile = filepath.Join(dir, tt.outfile)
 			}
 			inf := filepath.Join(dir, tt.infile)
-			c.PositionalArgs.Infile = goflags.Filename(inf)
-			c.PositionalArgs.Outfile = tt.outfile
 			c.flattener = flattenPassthrough
 
-			err := c.Execute(nil)
+			err := c.execute(inf, tt.outfile)
 			if tt.wantErr != "" {
 				require.Error(t, err)
 				assert.Regexp(t, tt.wantErr, err.Error())

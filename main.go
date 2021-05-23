@@ -1,52 +1,48 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
+	"runtime"
 
 	"git.sr.ht/~motiejus/code/undocker/rootfs"
-	goflags "github.com/jessevdk/go-flags"
 )
 
-const _description = "Flatten a docker container image to a tarball"
+const _usage = `Usage:
+  %s <INFILE> <OUTFILE>
+
+Flatten a Docker container image to a root file system.
+
+Arguments:
+  <infile>:  Input Docker container. Tarball.
+  <outfile>: Output tarball, the root file system. '-' is stdout.
+`
 
 func main() {
-	parser := goflags.NewParser(newCommand(), goflags.Default)
-	_, err := parser.Parse()
-	if err != nil {
+	runtime.GOMAXPROCS(1) // no need to create that many threads
+
+	if len(os.Args) != 3 {
+		fmt.Fprintf(os.Stderr, _usage, filepath.Base(os.Args[0]))
+		os.Exit(1)
+	}
+
+	c := &command{flattener: rootfs.Flatten, Stdout: os.Stdout}
+	if err := c.execute(os.Args[1], os.Args[2]); err != nil {
+		fmt.Errorf("Error: %v", err)
 		os.Exit(1)
 	}
 	os.Exit(0)
 }
 
-// command implements go-flags.Command
 type command struct {
 	flattener func(io.ReadSeeker, io.Writer) error
 	Stdout    io.Writer
-
-	PositionalArgs struct {
-		Infile  goflags.Filename `long:"infile" description:"Input tarball"`
-		Outfile string           `long:"outfile" description:"Output path, stdout is '-'"`
-	} `positional-args:"yes" required:"yes"`
 }
 
-// newCommand creates a new Command struct
-func newCommand() *command {
-	return &command{
-		flattener: rootfs.Flatten,
-		Stdout:    os.Stdout,
-	}
-}
-
-// Execute executes rootfs Command
-func (c *command) Execute(args []string) (err error) {
-	if len(args) != 0 {
-		return errors.New("too many args")
-	}
-
-	rd, err := os.Open(string(c.PositionalArgs.Infile))
+func (c *command) execute(infile string, outfile string) (err error) {
+	rd, err := os.Open(infile)
 	if err != nil {
 		return err
 	}
@@ -58,10 +54,10 @@ func (c *command) Execute(args []string) (err error) {
 	}()
 
 	var out io.Writer
-	if fname := string(c.PositionalArgs.Outfile); fname == "-" {
+	if outfile == "-" {
 		out = c.Stdout
 	} else {
-		outf, err := os.Create(fname)
+		outf, err := os.Create(outfile)
 		if err != nil {
 			return fmt.Errorf("create: %w", err)
 		}
