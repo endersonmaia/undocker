@@ -11,10 +11,13 @@ import (
 	"go.uber.org/multierr"
 )
 
-// Command is "lxcconfig" command
+const _description = "Create an LXC-compatible container configuration"
+
 type (
+	// Command is an implementation of go-flags.Command
 	Command struct {
-		Stdout io.Writer
+		configer func(io.ReadSeeker, io.Writer) error
+		Stdout   io.Writer
 
 		PositionalArgs struct {
 			Infile  goflags.Filename `long:"infile" description:"Input tarball"`
@@ -25,12 +28,13 @@ type (
 
 func NewCommand() *Command {
 	return &Command{
-		Stdout: os.Stdout,
+		configer: lxcconfig.LXCConfig,
+		Stdout:   os.Stdout,
 	}
 }
 
-func (*Command) ShortDesc() string { return "Create an LXC-compatible container configuration" }
-func (*Command) LongDesc() string  { return "" }
+func (*Command) ShortDesc() string { return _description }
+func (*Command) LongDesc() string  { return _description }
 
 // Execute executes lxcconfig Command
 func (c *Command) Execute(args []string) (err error) {
@@ -57,5 +61,5 @@ func (c *Command) Execute(args []string) (err error) {
 		out = outf
 	}
 
-	return lxcconfig.LXCConfig(rd, out)
+	return c.configer(rd, out)
 }

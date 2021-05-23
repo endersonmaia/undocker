@@ -11,7 +11,10 @@ import (
 	"go.uber.org/multierr"
 )
 
+const _description = "Flatten a docker container image to a tarball"
+
 type (
+	// Command is an implementation of go-flags.Command
 	Command struct {
 		flattener func(io.ReadSeeker, io.Writer) error
 		Stdout    io.Writer
@@ -30,8 +33,8 @@ func NewCommand() *Command {
 	}
 }
 
-func (*Command) ShortDesc() string { return "Flatten a docker container image to a tarball" }
-func (*Command) LongDesc() string  { return "" }
+func (*Command) ShortDesc() string { return _description }
+func (*Command) LongDesc() string  { return _description }
 
 // Execute executes rootfs Command
 func (c *Command) Execute(args []string) (err error) {
