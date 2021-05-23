@@ -12,7 +12,7 @@ def _rootfs_impl(ctx):
     )
     return [DefaultInfo(
             files = depset([out]),
-            runfiles = ctx.runfiles(files = ctx.attr.src.files.to_list())
+            runfiles = ctx.runfiles(files = ctx.files.src),
     )]
 
 rootfs = rule(

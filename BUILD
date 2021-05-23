@@ -1,4 +1,5 @@
 load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
+load("@bazel_tools//tools/build_defs/pkg:pkg.bzl", "pkg_tar")
 load("//src/undocker:rules.bzl", "rootfs")
 load(
     "@io_bazel_rules_docker//container:container.bzl",
@@ -23,7 +24,13 @@ go_binary(
     visibility = ["//visibility:public"],
 )
 
+pkg_tar(
+    name = "alpine-container-plus",
+    deps = ["@alpine//image:image"],
+)
+
 rootfs(
     name = "alpine-rootfs",
-    src = "@alpine//image:image",
+    #src = "@alpine//image:image",
+    src = ":alpine-container-plus",
 )
