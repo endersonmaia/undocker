@@ -12,7 +12,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/motiejus/code/undocker/internal/bytecounter"
 	"go.uber.org/multierr"
 )
 
@@ -48,8 +47,8 @@ func New(rd io.ReadSeeker) *RootFS {
 	return &RootFS{rd: rd}
 }
 
-// WriteTo writes a docker image to an open tarball.
-func (r *RootFS) WriteTo(w io.Writer) (n int64, err error) {
+// Flatten flattens a docker image to an open tarball.
+func (r *RootFS) Flatten(w io.Writer) (err error) {
 	tr := tar.NewReader(r.rd)
 	var closer func() error
 
@@ -72,19 +71,19 @@ func (r *RootFS) WriteTo(w io.Writer) (n int64, err error) {
 		case filepath.Clean(hdr.Name) == _manifestJSON:
 			dec := json.NewDecoder(tr)
 			if err := dec.Decode(&manifest); err != nil {
-				return n, fmt.Errorf("decode %s: %w", _manifestJSON, err)
+				return fmt.Errorf("decode %s: %w", _manifestJSON, err)
 			}
 		case strings.HasSuffix(hdr.Name, _layerSuffix):
 			here, err := r.rd.Seek(0, io.SeekCurrent)
 			if err != nil {
-				return n, err
+				return err
 			}
 			layerOffsets[hdr.Name] = here
 		}
 	}
 
 	if len(manifest) == 0 || len(layerOffsets) != len(manifest[0].Layers) {
-		return n, errBadManifest
+		return errBadManifest
 	}
 
 	// enumerate layers the way they would be laid down in the image
@@ -109,7 +108,7 @@ func (r *RootFS) WriteTo(w io.Writer) (n int64, err error) {
 	// iterate over all files, construct `file2layer`, `whreaddir`, `wh`
 	for i, no := range layers {
 		if _, err := r.rd.Seek(no.offset, io.SeekStart); err != nil {
-			return n, err
+			return err
 		}
 		tr, closer = openTargz(r.rd)
 		for {
@@ -118,7 +117,7 @@ func (r *RootFS) WriteTo(w io.Writer) (n int64, err error) {
 				break
 			}
 			if err != nil {
-				return n, fmt.Errorf("decode %s: %w", no.name, err)
+				return fmt.Errorf("decode %s: %w", no.name, err)
 			}
 			if hdr.Typeflag == tar.TypeDir {
 				continue
@@ -142,23 +141,21 @@ func (r *RootFS) WriteTo(w io.Writer) (n int64, err error) {
 			file2layer[hdr.Name] = i
 		}
 		if err := closer(); err != nil {
-			return n, err
+			return err
 		}
 	}
 
 	// construct directories to whiteout, for each layer.
 	whIgnore := whiteoutDirs(whreaddir, len(layers))
 
-	wr := bytecounter.New(w)
-	tw := tar.NewWriter(wr)
+	tw := tar.NewWriter(w)
 	defer func() {
 		err = multierr.Append(err, tw.Close())
-		n = wr.N
 	}()
 	// iterate through all layers, all files, and write files.
 	for i, no := range layers {
 		if _, err := r.rd.Seek(no.offset, io.SeekStart); err != nil {
-			return n, err
+			return err
 		}
 		tr, closer = openTargz(r.rd)
 		for {
@@ -167,7 +164,7 @@ func (r *RootFS) WriteTo(w io.Writer) (n int64, err error) {
 				break
 			}
 			if err != nil {
-				return n, fmt.Errorf("decode %s: %w", no.name, err)
+				return fmt.Errorf("decode %s: %w", no.name, err)
 			}
 			if layer, ok := wh[hdr.Name]; ok && layer >= i {
 				continue
@@ -179,14 +176,14 @@ func (r *RootFS) WriteTo(w io.Writer) (n int64, err error) {
 				continue
 			}
 			if err := writeFile(tr, tw, hdr); err != nil {
-				return n, err
+				return err
 			}
 		}
 		if err := closer(); err != nil {
-			return n, err
+			return err
 		}
 	}
-	return n, nil
+	return nil
 }
 
 func writeFile(tr *tar.Reader, tw *tar.Writer, hdr *tar.Header) error {
@@ -238,10 +235,8 @@ func whiteoutDirs(whreaddir map[string]int, nlayers int) []*tree {
 
 // openTargz creates a tar reader from a targzip or tar.
 //
-// We may be looking at magic values for tar and/or gzip,
-// which would mean "cleaner" code (e.g. no proxyWriter),
-// but that would mean re-implementing gzip.readHeader(),
-// which is ... already in stdlib.
+// It will try to open a gzip stream, and, if that fails, silently fall back to
+// tar. I will accept a cleaner implementation looking at magic values.
 func openTargz(r io.Reader) (*tar.Reader, func() error) {
 	hdrbuf := &bytes.Buffer{}
 	hdrw := &proxyWriter{w: hdrbuf}

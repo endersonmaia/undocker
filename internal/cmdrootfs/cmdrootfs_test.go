@@ -67,7 +67,7 @@ func TestExecute(t *testing.T) {
 			inf := filepath.Join(dir, tt.infile)
 			c.PositionalArgs.Infile = goflags.Filename(inf)
 			c.PositionalArgs.Outfile = tt.outfile
-			c.rootfsNew = func(r io.ReadSeeker) io.WriterTo {
+			c.rootfsNew = func(r io.ReadSeeker) flattener {
 				return &passthrough{r}
 			}
 
@@ -92,4 +92,7 @@ func TestExecute(t *testing.T) {
 
 type passthrough struct{ r io.Reader }
 
-func (p *passthrough) WriteTo(w io.Writer) (int64, error) { return io.Copy(w, p.r) }
+func (p *passthrough) Flatten(w io.Writer) error {
+	_, err := io.Copy(w, p.r)
+	return err
+}

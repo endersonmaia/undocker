@@ -186,7 +186,7 @@ func TestRootFS(t *testing.T) {
 			in := bytes.NewReader(tt.image.Buffer().Bytes())
 			out := bytes.Buffer{}
 
-			n, err := New(in).WriteTo(&out)
+			err := New(in).Flatten(&out)
 			if tt.wantErr != "" {
 				assert.EqualError(t, err, tt.wantErr)
 				return
@@ -195,7 +195,6 @@ func TestRootFS(t *testing.T) {
 			require.NoError(t, err)
 			got := tartest.Extract(t, bytes.NewReader(outb))
 			assert.Equal(t, tt.want, got)
-			assert.Equal(t, int64(len(outb)), n)
 		})
 	}
 }

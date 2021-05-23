@@ -13,7 +13,11 @@ import (
 )
 
 type (
-	rootfsFactory func(io.ReadSeeker) io.WriterTo
+	flattener interface {
+		Flatten(io.Writer) error
+	}
+
+	rootfsFactory func(io.ReadSeeker) flattener
 
 	// Command is "rootfs" command
 	Command struct {
@@ -55,10 +59,7 @@ func (c *Command) Execute(args []string) (err error) {
 		out = outf
 	}
 
-	if _, err := c.rootfsNew(rd).WriteTo(out); err != nil {
-		return err
-	}
-	return nil
+	return c.rootfsNew(rd).Flatten(out)
 }
 
 // init() initializes Command with the default options.
@@ -67,7 +68,7 @@ func (c *Command) Execute(args []string) (err error) {
 // command will initialize itself.
 func (c *Command) init() {
 	c.BaseCommand.Init()
-	c.rootfsNew = func(r io.ReadSeeker) io.WriterTo {
+	c.rootfsNew = func(r io.ReadSeeker) flattener {
 		return rootfs.New(r)
 	}
 }
