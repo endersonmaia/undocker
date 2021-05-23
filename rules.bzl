@@ -63,15 +63,21 @@ def _lxcconfig_impl(ctx):
 
 
 def lxcbundle(name, src):
-    rootfsname = name+"-rootfs"
-    rootfsnametar = rootfsname+"-tar"
-    rootfs(name = rootfsnametar, src = src, out = rootfsname+".tar")
+    rootfsname = name+"/_/rootfs"
+    rootfs(name = rootfsname, src = src, out = rootfsname+".tar")
     lxcconfig(name, src = src)
     native.genrule(
-        name = rootfsnametar + "-xz",
-        srcs = [rootfsnametar],
+        name = name+"-rootfs",
+        srcs = [rootfsname],
         outs = [rootfsname + ".tar.xz"],
         cmd = "xz -cf $< > $@",
+    )
+    pkg_tar(
+        name = name,
+        srcs = [
+            name+"-rootfs",
+            name+"-meta",
+        ],
     )
 
 _lxcconfig = rule(
@@ -85,12 +91,13 @@ _lxcconfig = rule(
 
 
 def lxcconfig(name, src):
-    _lxcconfig(name = name+"/config", src = src)
+    _lxcconfig(name = name+"/_/config", src = src)
     pkg_tar(
-        name = name + ".config",
+        name = name + "-meta",
         extension = "tar.xz",
-        srcs = [name+"/config"],
+        srcs = [name+"/_/config"],
         remap_paths = {
             name: "",
         },
+        out = "meta.tar.xz",
     )
