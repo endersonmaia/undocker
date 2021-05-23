@@ -73,7 +73,7 @@ func LXCConfig(rd io.ReadSeeker, wr io.Writer) error {
 }
 
 func docker2lxc(d dockerConfig) lxcConfig {
-	// cmd/entrypoint logic is copied from lxc-oci template and adopted
+	// cmd/entrypoint logic is copied from lxc-oci template and adapted
 	// for simple double-argument quoting.
 	ep := quoted(d.Config.Entrypoint)
 	cmd := quoted(d.Config.Cmd)
