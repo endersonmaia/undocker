@@ -19,11 +19,3 @@ go_binary(
     embed = [":go_default_library"],
     visibility = ["//visibility:public"],
 )
-
-genrule(
-    name = "alpine-rootfs",
-    srcs = ["@alpine//image"],
-    outs = ["alpine-rootfs.tar"],
-    cmd = "$(location :undocker) rootfs $< $@",
-    tools = [":undocker"],
-)

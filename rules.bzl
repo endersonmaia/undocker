@@ -1,3 +1,5 @@
+load("@rules_pkg//:pkg.bzl", "pkg_tar")
+
 _undocker_cli = attr.label(
     doc = "undocker cli; private and may not be overridden",
     cfg = "host",
@@ -39,7 +41,7 @@ rootfs = rule(
 )
 
 def _lxcconfig_impl(ctx):
-    out = ctx.actions.declare_file(ctx.attr.name + ".conf")
+    out = ctx.actions.declare_file(ctx.attr.name)
     ctx.actions.run(
         outputs = [out],
         inputs = ctx.files.src,
@@ -56,7 +58,7 @@ def _lxcconfig_impl(ctx):
         runfiles = ctx.runfiles(files = ctx.files.src),
     )
 
-lxcconfig = rule(
+_lxcconfig = rule(
     _lxcconfig_impl,
     doc = "Generate lxc config from a docker container image",
     attrs = {
@@ -64,3 +66,14 @@ lxcconfig = rule(
         "_undocker": _undocker_cli,
     },
 )
+
+def lxcconfig(name, src):
+    _lxcconfig(name = name+"/config", src = src)
+    pkg_tar(
+        name = name + "txz",
+        extension = "tar.xz",
+        srcs = [name+"/config"],
+        remap_paths = {
+            name: "",
+        },
+    )
