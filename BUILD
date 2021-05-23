@@ -1,4 +1,5 @@
 load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
+load("//src/undocker:rules.bzl", "rootfs")
 
 go_library(
     name = "go_default_library",
