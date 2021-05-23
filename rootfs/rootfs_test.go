@@ -74,7 +74,7 @@ func (tb tarball) bytes(t *testing.T) []byte {
 
 func extract(t *testing.T, tarball io.Reader) []file {
 	t.Helper()
-	var ret []file
+	ret := []file{}
 	tr := tar.NewReader(tarball)
 	for {
 		hdr, err := tr.Next()
@@ -89,6 +89,7 @@ func extract(t *testing.T, tarball io.Reader) []file {
 			io.Copy(&buf, tr)
 			elem.contents = buf.Bytes()
 		}
+		ret = append(ret, elem)
 	}
 	return ret
 }
