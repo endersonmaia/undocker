@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"path/filepath"
 	"strings"
 
@@ -234,27 +235,23 @@ func whiteoutDirs(whreaddir map[string]int, nlayers int) []*tree {
 
 // openTargz creates a tar reader from a targzip or tar
 func openTargz(r io.Reader) (*tar.Reader, func() error) {
-	var hdrbuf bytes.Buffer
-	hdrw := &discarder{w: &hdrbuf}
+	hdrbuf := &bytes.Buffer{}
+	hdrw := &proxyWriter{w: hdrbuf}
 	gz, err := gzip.NewReader(io.TeeReader(r, hdrw))
 	if err == nil {
-		hdrw.w = nil
-		hdrbuf.Reset()
+		hdrw.w = ioutil.Discard
+		hdrbuf = nil
 		return tar.NewReader(gz), gz.Close
 	}
-	return tar.NewReader(io.MultiReader(&hdrbuf, r)), func() error { return nil }
+	return tar.NewReader(io.MultiReader(hdrbuf, r)), func() error { return nil }
 }
 
-// discarder is a pass-through writer until instructed to 'discard' its writes
-// by setting its writer to nil. Useful for proxying writes from a TeeReader
-// until it's known to be unnecessary.
-type discarder struct {
-	w       io.Writer
+// proxyWriter is a pass-through writer. Its underlying writer can be changed
+// on-the-fly.
+type proxyWriter struct {
+	w io.Writer
 }
 
-func (d *discarder) Write(p []byte) (int, error) {
-	if d.w == nil {
-		return len(p), nil
-	}
-	return d.w.Write(p)
+func (pw *proxyWriter) Write(p []byte) (int, error) {
+	return pw.w.Write(p)
 }
