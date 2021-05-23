@@ -56,8 +56,8 @@ Notes & gotchas
 ---------------
 
 `unocker` does not magically enable you to run containers from the internet.
-Many will need significant tuning or not work at all. Thus you will still need
-to understand what are you running.
+Many will need significant tuning or not work at all; one will still need to
+understand [what's inside](https://xkcd.com/1988/).
 
 Contributions
 -------------
