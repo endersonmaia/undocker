@@ -6,18 +6,18 @@ import (
 	"strings"
 )
 
-// Tree is a way to store directory paths for whiteouts.
+// tree is a way to store directory paths for whiteouts.
 // It is semi-optimized for reads and non-optimized for writes;
 // See Merge() and HasPrefix for trade-offs.
-type Tree struct {
+type tree struct {
 	name     string
-	children []*Tree
+	children []*tree
 	end      bool
 }
 
 // New creates a new tree from a given path.
-func New(paths ...string) *Tree {
-	t := &Tree{name: ".", children: []*Tree{}}
+func newTree(paths ...string) *tree {
+	t := &tree{name: ".", children: []*tree{}}
 	for _, path := range paths {
 		t.Add(path)
 	}
@@ -25,7 +25,7 @@ func New(paths ...string) *Tree {
 }
 
 // Add adds a sequence to a tree
-func (t *Tree) Add(path string) {
+func (t *tree) Add(path string) {
 	t.add(strings.Split(filepath.Clean(path), "/"))
 }
 
@@ -35,18 +35,18 @@ func (t *Tree) Add(path string) {
 // really small (usually 1 or 2), it does not really matter. If you find a
 // real-world container with 30+ whiteout paths on a single path, please ping
 // the author/maintainer of this code.
-func (t *Tree) HasPrefix(path string) bool {
+func (t *tree) HasPrefix(path string) bool {
 	return t.hasprefix(strings.Split(filepath.Clean(path), "/"))
 }
 
 // Merge merges adds t2 to t. It is not optimized for speed, since it's walking
 // full branch for every other branch.
-func (t *Tree) Merge(t2 *Tree) {
+func (t *tree) Merge(t2 *tree) {
 	t.merge(t2, []string{})
 }
 
 // String stringifies a tree
-func (t *Tree) String() string {
+func (t *tree) String() string {
 	if len(t.children) == 0 {
 		return "<empty>"
 	}
@@ -57,7 +57,7 @@ func (t *Tree) String() string {
 	return strings.Join(res.res, ":")
 }
 
-func (t *Tree) add(nodes []string) {
+func (t *tree) add(nodes []string) {
 	if len(nodes) == 0 {
 		t.end = true
 		return
@@ -69,12 +69,12 @@ func (t *Tree) add(nodes []string) {
 		}
 	}
 
-	newNode := &Tree{name: nodes[0]}
+	newNode := &tree{name: nodes[0]}
 	t.children = append(t.children, newNode)
 	newNode.add(nodes[1:])
 }
 
-func (t *Tree) hasprefix(nodes []string) bool {
+func (t *tree) hasprefix(nodes []string) bool {
 	if len(nodes) == 0 {
 		return t.end
 	}
@@ -95,7 +95,7 @@ type stringer struct {
 	res []string
 }
 
-func (s *stringer) stringify(t *Tree, acc []string) {
+func (s *stringer) stringify(t *tree, acc []string) {
 	if t.name == "" {
 		return
 	}
@@ -109,7 +109,7 @@ func (s *stringer) stringify(t *Tree, acc []string) {
 	}
 }
 
-func (t *Tree) merge(t2 *Tree, acc []string) {
+func (t *tree) merge(t2 *tree, acc []string) {
 	if t2.end {
 		t.add(append(acc[1:], t2.name))
 	}

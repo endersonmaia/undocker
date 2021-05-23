@@ -33,7 +33,7 @@ func TestTree(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			tree := New(tt.paths...)
+			tree := newTree(tt.paths...)
 
 			for _, path := range tt.matchTrue {
 				t.Run(path, func(t *testing.T) {
@@ -53,8 +53,8 @@ func TestTree(t *testing.T) {
 }
 
 func TestTreeMerge(t *testing.T) {
-	tree1 := New("bin/ar", "var/cache/apt")
-	tree2 := New("bin/ar", "bin/busybox", "usr/share/doc")
+	tree1 := newTree("bin/ar", "var/cache/apt")
+	tree2 := newTree("bin/ar", "bin/busybox", "usr/share/doc")
 	tree1.Merge(tree2)
 	assert.Equal(t, "./bin/ar:./bin/busybox:./usr/share/doc:./var/cache/apt", tree1.String())
 	assert.Equal(t, "./bin/ar:./bin/busybox:./usr/share/doc", tree2.String())
@@ -90,7 +90,7 @@ func TestString(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			tree := New(tt.paths...)
+			tree := newTree(tt.paths...)
 			assert.Equal(t, tt.wantStr, tree.String())
 		})
 	}

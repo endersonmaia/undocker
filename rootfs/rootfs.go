@@ -193,10 +193,10 @@ func writeFile(tr *tar.Reader, tw *tar.Writer, hdr *tar.Header) error {
 	return nil
 }
 
-func whiteoutDirs(whreaddir map[string]int, nlayers int) []*Tree {
-	ret := make([]*Tree, nlayers)
+func whiteoutDirs(whreaddir map[string]int, nlayers int) []*tree {
+	ret := make([]*tree, nlayers)
 	for i := range ret {
-		ret[i] = New()
+		ret[i] = newTree()
 	}
 	for fname, layer := range whreaddir {
 		if layer == 0 {
