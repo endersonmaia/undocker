@@ -25,6 +25,7 @@ func (d dir) tar(t *testing.T, tw *tar.Writer) {
 	hdr := &tar.Header{
 		Typeflag: tar.TypeDir,
 		Name:     d.name,
+		Mode:     0644,
 		Uid:      d.uid,
 	}
 	require.NoError(t, tw.WriteHeader(hdr))
@@ -41,6 +42,7 @@ func (f file) tar(t *testing.T, tw *tar.Writer) {
 	hdr := &tar.Header{
 		Typeflag: tar.TypeReg,
 		Name:     f.name,
+		Mode:     0644,
 		Uid:      f.uid,
 		Size:     int64(len(f.contents)),
 	}
@@ -72,10 +74,10 @@ func (tb tarball) bytes(t *testing.T) []byte {
 	return buf.Bytes()
 }
 
-func extract(t *testing.T, tarball io.Reader) []file {
+func extract(t *testing.T, f io.Reader) []file {
 	t.Helper()
 	ret := []file{}
-	tr := tar.NewReader(tarball)
+	tr := tar.NewReader(f)
 	for {
 		hdr, err := tr.Next()
 		if err == io.EOF {
@@ -108,7 +110,7 @@ func TestRootFS(t *testing.T) {
 	_image := tarball{
 		file{name: "layer1/layer.tar", contents: _layer1.bytes(t)},
 		file{name: "layer0/layer.tar", contents: _layer0.bytes(t)},
-		manifest{"layer0/layer0.tar", "layer1/layer.tar"},
+		manifest{"layer0/layer.tar", "layer1/layer.tar"},
 	}
 
 	tests := []struct {
@@ -126,7 +128,7 @@ func TestRootFS(t *testing.T) {
 			image: _image,
 			want: []file{
 				{name: "/", uid: 1},
-				{name: "file", uid: 0, contents: []byte("from 1")},
+				{name: "/file", uid: 0, contents: []byte("from 1")},
 			},
 		},
 	}
@@ -138,7 +140,7 @@ func TestRootFS(t *testing.T) {
 
 			require.NoError(t, RootFS(in, &out))
 			got := extract(t, &out)
-			assert.Equal(t, tt.want, got)
+			assert.Equal(t, got, tt.want)
 		})
 	}
 }

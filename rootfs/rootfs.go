@@ -136,7 +136,7 @@ func RootFS(in io.ReadSeeker, out io.Writer) (err error) {
 				ModTime:  hdr.ModTime,
 				Devmajor: hdr.Devmajor,
 				Devminor: hdr.Devminor,
-				Format:   tar.FormatGNU,
+				Format:   tar.FormatPAX,
 			}
 
 			if err := tw.WriteHeader(hdrOut); err != nil {
