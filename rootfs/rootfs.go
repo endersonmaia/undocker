@@ -15,6 +15,8 @@ import (
 const (
 	_manifestJSON = "manifest.json"
 	_layerSuffix  = "/layer.tar"
+	_whReaddir    = ".wh..wh..opq"
+	_whPrefix     = ".wh."
 )
 
 var (
@@ -39,23 +41,22 @@ func RootFS(in io.ReadSeeker, out io.Writer) (err error) {
 	tr := tar.NewReader(in)
 	tw := tar.NewWriter(out)
 	defer func() { err = multierr.Append(err, tw.Close()) }()
+
 	// layerOffsets maps a layer name (a9b123c0daa/layer.tar) to it's offset
 	layerOffsets := map[string]int64{}
 
 	// manifest is the docker manifest in the image
 	var manifest dockerManifestJSON
 
-	// phase 1: get layer offsets and manifest.json
+	// get layer offsets and manifest.json
 	for {
 		hdr, err := tr.Next()
 		if err == io.EOF {
 			break
 		}
-
 		if hdr.Typeflag != tar.TypeReg {
 			continue
 		}
-
 		switch {
 		case filepath.Clean(hdr.Name) == _manifestJSON:
 			dec := json.NewDecoder(tr)
@@ -84,13 +85,20 @@ func RootFS(in io.ReadSeeker, out io.Writer) (err error) {
 	// file2layer maps a filename to layer number (index in "layers")
 	file2layer := map[string]int{}
 
-	// iterate through all layers and save filenames for all kinds of files.
+	// whreaddir maps a directory to a layer number until which
+	// its contents should be ignored, exclusively.
+	whreaddir := map[string]int{}
+
+	// wh maps a filename to a layer until which it should be ignored,
+	// inclusively.
+	wh := map[string]int{}
+
+	// build up `file2layer`, `whreaddir`, `wh`
 	for i, offset := range layers {
 		if _, err := in.Seek(offset, io.SeekStart); err != nil {
 			return err
 		}
 		tr = tar.NewReader(in)
-
 		for {
 			hdr, err := tr.Next()
 			if err == io.EOF {
@@ -99,6 +107,23 @@ func RootFS(in io.ReadSeeker, out io.Writer) (err error) {
 			if err != nil {
 				return err
 			}
+			if hdr.Typeflag == tar.TypeDir {
+				continue
+			}
+
+			if hdr.Typeflag == tar.TypeLink {
+				basename := filepath.Base(hdr.Name)
+				basedir := filepath.Dir(hdr.Name)
+				if basename == _whReaddir {
+					whreaddir[basedir] = i
+					continue
+				} else if strings.HasPrefix(basename, _whPrefix) {
+					fname := strings.TrimPrefix(basename, _whPrefix)
+					wh[filepath.Join(basedir, fname)] = i
+					continue
+				}
+			}
+
 			file2layer[hdr.Name] = i
 		}
 	}
@@ -109,7 +134,6 @@ func RootFS(in io.ReadSeeker, out io.Writer) (err error) {
 			return err
 		}
 		tr = tar.NewReader(in)
-
 		for {
 			hdr, err := tr.Next()
 			if err == io.EOF {
@@ -118,13 +142,9 @@ func RootFS(in io.ReadSeeker, out io.Writer) (err error) {
 			if err != nil {
 				return err
 			}
-
-			// Only directories can have multiple entries with the same name.
-			// all other file types cannot.
-			if hdr.Typeflag != tar.TypeDir && file2layer[hdr.Name] != i {
+			if file2layer[hdr.Name] != i {
 				continue
 			}
-
 			if err := writeFile(tr, tw, hdr); err != nil {
 				return err
 			}
