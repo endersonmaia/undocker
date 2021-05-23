@@ -24,8 +24,8 @@ skopeo copy docker://docker.io/busybox:latest docker-archive:busybox.tar
 undocker busybox.tar - | tar -xv
 ```
 
-Almost the same can be done with a combination of `docker pull` and `docker
-save`.
+You can also refer to [this][2] for other ways to download Docker images. There
+are many.
 
 Usage -- systemd-nspawn example
 -------------------------------
@@ -59,6 +59,13 @@ Notes & gotchas
 Many will need significant tuning or not work at all; one will still need to
 understand [what's inside](https://xkcd.com/1988/).
 
+Changelog
+---------
+
+**0.1**
+
+* initial release: `rootfs.Flatten` and a simple command-line application.
+
 Contributions
 -------------
 
@@ -76,4 +83,10 @@ Issues without accompanying patches will most likely be rejected, with one
 exception: reports about regressions do not have to contain patches, but a
 failing commit is mandatory, and a failing test case is highly appreciated.
 
+LICENSE
+-------
+
+MIT.
+
 [1]: https://www.freedesktop.org/software/systemd/man/systemd.exec.html
+[2]: https://fly.io/blog/docker-without-docker/
