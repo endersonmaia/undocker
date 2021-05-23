@@ -70,10 +70,22 @@ _lxcconfig = rule(
 def lxcconfig(name, src):
     _lxcconfig(name = name+"/config", src = src)
     pkg_tar(
-        name = name + "txz",
+        name = name + ".config",
         extension = "tar.xz",
         srcs = [name+"/config"],
         remap_paths = {
             name: "",
         },
+    )
+
+
+def lxcbundle(name, src):
+    rootfsname = name+"-rootfs"
+    rootfs(name = rootfsname, src = src)
+    lxcconfig(name, src = src)
+    native.genrule(
+        name = rootfsname + ".xz",
+        srcs = [rootfsname],
+        outs = [rootfsname + ".xz"],
+        cmd = "xz -cf $< > $@",
     )
