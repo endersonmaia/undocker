@@ -1,0 +1,18 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "go_default_library",
+    srcs = ["bytecounter.go"],
+    importpath = "github.com/motiejus/code/undocker/internal/bytecounter",
+    visibility = ["//src/undocker:__subpackages__"],
+)
+
+go_test(
+    name = "go_default_test",
+    srcs = ["bytecounter_test.go"],
+    embed = [":go_default_library"],
+    deps = [
+        "@com_github_stretchr_testify//assert:go_default_library",
+        "@com_github_stretchr_testify//require:go_default_library",
+    ],
+)

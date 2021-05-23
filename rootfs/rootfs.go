@@ -222,15 +222,3 @@ func whiteoutDirs(whreaddir map[string]int, nlayers int) []*tree {
 	}
 	return ret
 }
-
-// byteCounter is an io.Writer that counts bytes written to it
-type byteCounter struct {
-	rw io.Writer
-	n  int64
-}
-
-// Write writes to the underlying io.Writer and counts total written bytes
-func (b *byteCounter) Write(data []byte) (n int, err error) {
-	defer func() { b.n += int64(n) }()
-	return b.rw.Write(data)
-}

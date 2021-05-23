@@ -5,17 +5,22 @@ import (
 	"os"
 
 	goflags "github.com/jessevdk/go-flags"
+	"github.com/motiejus/code/undocker/internal/cmd"
 	"github.com/motiejus/code/undocker/lxcconfig"
 	"go.uber.org/multierr"
 )
 
 // Command is "lxcconfig" command
-type Command struct {
-	PositionalArgs struct {
-		Infile  goflags.Filename `long:"infile" description:"Input tarball"`
-		Outfile string           `long:"outfile" description:"Output path, stdout is '-'"`
-	} `positional-args:"yes" required:"yes"`
-}
+type (
+	Command struct {
+		PositionalArgs struct {
+			cmd.BaseCommand
+
+			Infile  goflags.Filename `long:"infile" description:"Input tarball"`
+			Outfile string           `long:"outfile" description:"Output path, stdout is '-'"`
+		} `positional-args:"yes" required:"yes"`
+	}
+)
 
 // Execute executes lxcconfig Command
 func (c *Command) Execute(args []string) (err error) {
