@@ -36,9 +36,9 @@ type dockerManifestJSON []struct {
 //       I) layer name
 //       II) offset (0 being the first file in the layer)
 // 4. go through
-func RootFS(in io.ReadSeeker, out io.Writer) (err error) {
+func RootFS(in io.ReadSeeker, wr io.Writer) (err error) {
 	tr := tar.NewReader(in)
-	tw := tar.NewWriter(out)
+	tw := tar.NewWriter(wr)
 	defer func() { err = multierr.Append(err, tw.Close()) }()
 
 	// layerOffsets maps a layer name (a9b123c0daa/layer.tar) to it's offset

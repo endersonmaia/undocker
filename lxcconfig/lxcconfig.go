@@ -7,31 +7,88 @@ import (
 	"fmt"
 	"io"
 	"strings"
+	"text/template"
 )
 
-const _manifestJSON = "manifest.json"
-
-// dockerManifest is manifest.json
-type dockerManifest []struct {
-	Config string `json:"Config"`
-}
-
-// dockerConfig returns interesting configs for the container. user/group are
-// skipped, since Docker allows specifying them by name, which would require
-// peeking into the container image's /etc/passwd to resolve the names to ints.
-type dockerConfig struct {
-	Architecture string `json:"architecture"`
-	Config       struct {
-		Entrypoint []string `json:"Entrypoint"`
-		Cmd        []string `json:"Cmd"`
-		Env        []string `json:"Env"`
-		WorkingDir string   `json:"WorkingDir"`
-	} `json:"config"`
-}
+const (
+	_json         = ".json"
+	_manifestJSON = "manifest.json"
+)
 
 var (
+	_lxcTemplate = template.Must(
+		template.New("lxcconfig").Parse("" +
+			"lxc.include = LXC_TEMPLATE_CONFIG/common.conf\n" +
+			"lxc.architecture = {{ .Architecture }}\n" +
+			"lxc.execute.cmd = '{{ .Cmd }}'\n" +
+			"{{ if .Cwd }}lxc.init.cwd = {{ .Cwd }}\n{{ end }}" +
+			"{{ range .Env }}lxc.environment = {{ . }}\n{{ end }}"))
 	errBadManifest = errors.New("bad or missing manifest.json")
 )
+
+type (
+	// lxcConfig is passed to _lxcTemplate
+	lxcConfig struct {
+		Architecture string
+		Cmd          string
+		Cwd          string
+		Env          []string
+	}
+
+	// dockerManifest is manifest.json
+	dockerManifest []struct {
+		Config string `json:"Config"`
+	}
+
+	// dockerConfig returns interesting configs for the container. user/group are
+	// skipped, since Docker allows specifying them by name, which would require
+	// peeking into the container image's /etc/passwd to resolve the names to ints.
+	dockerConfig struct {
+		Architecture string             `json:"architecture"`
+		Config       dockerConfigConfig `json:"config"`
+	}
+
+	dockerConfigConfig struct {
+		Entrypoint []string `json:"Entrypoint"`
+		Cmd        []string `json:"Cmd"`
+		WorkingDir string   `json:"WorkingDir"`
+		Env        []string `json:"Env"`
+	}
+)
+
+// LXCConfig accepts a Docker container image and returns lxc configuration.
+func LXCConfig(in io.ReadSeeker, wr io.Writer) error {
+	dockerCfg, err := getDockerConfig(in)
+	if err != nil {
+		return err
+	}
+	lxcCfg := docker2lxc(dockerCfg)
+	return lxcCfg.WriteTo(wr)
+}
+
+func docker2lxc(d dockerConfig) lxcConfig {
+	// cmd/entrypoint logic is copied from lxc-oci template
+	ep := strings.Join(d.Config.Entrypoint, " ")
+	cmd := strings.Join(d.Config.Cmd, " ")
+	if len(ep) == 0 {
+		ep = cmd
+		if len(ep) == 0 {
+			ep = "/bin/sh"
+		}
+	} else if len(cmd) != 0 {
+		ep = ep + " " + cmd
+	}
+	return lxcConfig{
+		Architecture: d.Architecture,
+		Cmd:          ep,
+		Env:          d.Config.Env,
+		Cwd:          d.Config.WorkingDir,
+	}
+}
+
+func (l lxcConfig) WriteTo(wr io.Writer) error {
+	return _lxcTemplate.Execute(wr, l)
+}
 
 func getDockerConfig(in io.ReadSeeker) (dockerConfig, error) {
 	tr := tar.NewReader(in)
@@ -45,7 +102,7 @@ func getDockerConfig(in io.ReadSeeker) (dockerConfig, error) {
 		if hdr.Typeflag != tar.TypeReg {
 			continue
 		}
-		if !strings.HasSuffix(".json", hdr.Name) {
+		if !strings.HasSuffix(_json, hdr.Name) {
 			continue
 		}
 		here, err := in.Seek(0, io.SeekCurrent)
