@@ -35,6 +35,12 @@ type (
 		Env          []string
 	}
 
+	// offsetSize is a tuple which stores file offset and size
+	offsetSize struct {
+		offset int64
+		size   int64
+	}
+
 	// dockerManifest is manifest.json
 	dockerManifest []struct {
 		Config string `json:"Config"`
@@ -93,7 +99,7 @@ func (l lxcConfig) WriteTo(wr io.Writer) error {
 func getDockerConfig(rd io.ReadSeeker) (dockerConfig, error) {
 	tr := tar.NewReader(rd)
 	// get offsets to all json files rd the archive
-	jsonOffsets := map[string]int64{}
+	jsonOffsets := map[string]offsetSize{}
 	for {
 		hdr, err := tr.Next()
 		if err == io.EOF {
@@ -109,7 +115,10 @@ func getDockerConfig(rd io.ReadSeeker) (dockerConfig, error) {
 		if err != nil {
 			return dockerConfig{}, err
 		}
-		jsonOffsets[hdr.Name] = here
+		jsonOffsets[hdr.Name] = offsetSize{
+			offset: here,
+			size:   hdr.Size,
+		}
 	}
 
 	// manifest is the docker manifest rd the image
@@ -129,21 +138,17 @@ func getDockerConfig(rd io.ReadSeeker) (dockerConfig, error) {
 	return config, nil
 }
 
-//TODO: don't seek to files, read them.
-func parseJSON(rd io.ReadSeeker, offsets map[string]int64, fname string, c interface{}) error {
-	configOffset, ok := offsets[fname]
-	fmt.Printf("jumping to %s in %x\n", fname, configOffset)
+func parseJSON(rd io.ReadSeeker, offsets map[string]offsetSize, fname string, c interface{}) error {
+	osize, ok := offsets[fname]
 	if !ok {
 		return fmt.Errorf("file %s not found", fname)
 	}
-	if _, err := rd.Seek(configOffset, io.SeekStart); err != nil {
+	if _, err := rd.Seek(osize.offset, io.SeekStart); err != nil {
 		return fmt.Errorf("seek to %s: %w", fname, err)
 	}
-	tr := tar.NewReader(rd)
-	if _, err := tr.Next(); err != nil {
-		return err
-	}
-	dec := json.NewDecoder(tr)
+
+	lrd := io.LimitReader(rd, osize.size)
+	dec := json.NewDecoder(lrd)
 	if err := dec.Decode(c); err != nil {
 		return fmt.Errorf("decode %s: %w", fname, err)
 	}

@@ -4,6 +4,7 @@ import (
 	"archive/tar"
 	"bytes"
 	"encoding/json"
+	"strings"
 	"testing"
 
 	"github.com/motiejus/code/undocker/internal/tartest"
@@ -23,35 +24,37 @@ func TestLXCConfig(t *testing.T) {
 			docker: dockerConfig{
 				Architecture: "amd64",
 			},
-			want: `lxc.include = LXC_TEMPLATE_CONFIG/common.conf
-lxc.architecture = amd64
-lxc.execute.cmd = '/bin/sh'
-`,
+			want: strings.Join([]string{
+				`lxc.include = LXC_TEMPLATE_CONFIG/common.conf`,
+				`lxc.architecture = amd64`,
+				`lxc.execute.cmd = '/bin/sh'`,
+				``,
+			}, "\n"),
 		},
-		/*
-					{
-						name: "all fields",
-						docker: dockerConfig{
-							Architecture: "amd64",
-							Config: dockerConfigConfig{
-								Entrypoint: []string{"/entrypoint.sh"},
-								Cmd:        []string{"/bin/sh", "-c", "echo foo"},
-								WorkingDir: "/x",
-								Env: []string{
-									`LONGNAME="Foo Bar"`,
-									"SHELL=/bin/tcsh",
-								},
-							},
-						},
-						want: `lxc.include = LXC_TEMPLATE_CONFIG/common.conf
-			lxc.architecture = amd64
-			lxc.execute.cmd = '/entrypoint.sh /bin/sh -c echo foo'
-			lxc.init.cwd = /x
-			lxc.environment = LONGNAME="Foo Bar"
-			lxc.environment = SHELL=/bin/tcsh
-			`,
+		{
+			name: "all fields",
+			docker: dockerConfig{
+				Architecture: "amd64",
+				Config: dockerConfigConfig{
+					Entrypoint: []string{"/entrypoint.sh"},
+					Cmd:        []string{"/bin/sh", "-c", "echo foo"},
+					WorkingDir: "/x",
+					Env: []string{
+						`LONGNAME="Foo Bar"`,
+						"SHELL=/bin/tcsh",
 					},
-		*/
+				},
+			},
+			want: strings.Join([]string{
+				`lxc.include = LXC_TEMPLATE_CONFIG/common.conf`,
+				`lxc.architecture = amd64`,
+				`lxc.execute.cmd = '/entrypoint.sh /bin/sh -c echo foo'`,
+				`lxc.init.cwd = /x`,
+				`lxc.environment = LONGNAME="Foo Bar"`,
+				`lxc.environment = SHELL=/bin/tcsh`,
+				``,
+			}, "\n"),
+		},
 	}
 
 	for _, tt := range tests {
@@ -60,10 +63,9 @@ lxc.execute.cmd = '/bin/sh'
 				Name:     "manifest.json",
 				Contents: bytes.NewBufferString(`[{"Config":"config.json"}]`),
 			}
-			_ = manifest
 			archive := tartest.Tarball{
 				manifest,
-				//tt.docker,
+				tt.docker,
 			}
 			in := bytes.NewReader(archive.Buffer().Bytes())
 			var buf bytes.Buffer
