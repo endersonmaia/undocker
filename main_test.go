@@ -44,12 +44,12 @@ func TestExecute(t *testing.T) {
 		{
 			name:    "infile does not exist",
 			infile:  "t3-does-not-exist.txt",
-			wantErr: "^open .*t3-does-not-exist.txt: no such file or directory$",
+			wantErr: "^open .*not-exist.txt: no such file or directory$",
 		},
 		{
 			name:    "outpath dir not writable",
 			outfile: filepath.Join("t4", "does", "not", "exist"),
-			wantErr: "^create: open .*/t4/does/not/exist: no such file or directory",
+			wantErr: "^create: open .*not/exist: no such file or directory",
 		},
 	}
 

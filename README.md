@@ -17,7 +17,7 @@ tools: lxc, systemd-nspawn or systemd itself.
 Usage -- extract docker image
 -----------------------------
 
-Download `nginx` docker image from docker hub and convert it to a rootfs:
+Download `busybox` docker image from docker hub and convert it to a rootfs:
 
 ```
 skopeo copy docker://docker.io/busybox:latest docker-archive:busybox.tar

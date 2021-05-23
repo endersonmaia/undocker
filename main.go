@@ -11,7 +11,7 @@ import (
 )
 
 const _usage = `Usage:
-  %s <INFILE> <OUTFILE>
+  %s <infile> <outfile>
 
 Flatten a Docker container image to a root file system.
 

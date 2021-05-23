@@ -229,7 +229,10 @@ func whiteoutDirs(whreaddir map[string]int, nlayers int) []*tree {
 }
 
 // validateManifest
-func validateManifest(layerOffsets map[string]int64, manifest dockerManifestJSON) error {
+func validateManifest(
+	layerOffsets map[string]int64,
+	manifest dockerManifestJSON,
+) error {
 	if len(manifest) == 0 {
 		return fmt.Errorf("empty or missing manifest")
 	}
