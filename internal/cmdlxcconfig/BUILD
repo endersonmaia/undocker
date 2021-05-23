@@ -8,7 +8,6 @@ go_library(
     deps = [
         "//src/undocker/lxcconfig:go_default_library",
         "@com_github_jessevdk_go_flags//:go_default_library",
-        "@org_uber_go_multierr//:go_default_library",
     ],
 )
 

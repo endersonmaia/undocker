@@ -8,7 +8,6 @@ import (
 
 	goflags "github.com/jessevdk/go-flags"
 	"github.com/motiejus/code/undocker/lxcconfig"
-	"go.uber.org/multierr"
 )
 
 const _description = "Create an LXC-compatible container configuration"
@@ -46,7 +45,12 @@ func (c *Command) Execute(args []string) (err error) {
 	if err != nil {
 		return err
 	}
-	defer func() { err = multierr.Append(err, rd.Close()) }()
+	defer func() {
+		err1 := rd.Close()
+		if err == nil {
+			err = err1
+		}
+	}()
 
 	var out io.Writer
 	outf := string(c.PositionalArgs.Outfile)
@@ -57,7 +61,12 @@ func (c *Command) Execute(args []string) (err error) {
 		if err != nil {
 			return fmt.Errorf("create: %w", err)
 		}
-		defer func() { err = multierr.Append(err, outf.Close()) }()
+		defer func() {
+			err1 := outf.Close()
+			if err == nil {
+				err = err1
+			}
+		}()
 		out = outf
 	}
 
