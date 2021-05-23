@@ -3,10 +3,11 @@ def _rootfs_impl(ctx):
     out = ctx.actions.declare_file(outf)
     ctx.actions.run(
         outputs = [out],
+        inputs = ctx.files.src,
         executable = ctx.files._undocker[0],
         arguments = [
             "rootfs",
-            ctx.attr.src.files.to_list()[0].path,
+            ctx.files.src.to_list()[0].path,
             outf,
         ],
     )
@@ -31,21 +32,5 @@ rootfs = rule(
             allow_single_file = True,
             executable = True,
         ),
-    },
-)
-
-def _temp_impl(ctx):
-    for f in ctx.files.data:
-        print(f.path)
-    ctx.actions.run_shell(
-        outputs = [ctx.outputs.out],
-        command = "find $@",
-    )
-
-temp = rule(
-    implementation = _temp_impl,
-    attrs = {
-        "data": attr.label(mandatory = True, allow_single_file = True),
-        "out": attr.output(mandatory = True),
     },
 )
