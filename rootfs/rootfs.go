@@ -123,7 +123,10 @@ func RootFS(in io.ReadSeeker, out io.Writer) (err error) {
 			if err != nil {
 				return err
 			}
-			if file2layer[hdr.Name] != i {
+
+			// only directories can have multiple entries with the same name.
+			// all other file types cannot.
+			if hdr.Typeflag != tar.TypeDir && file2layer[hdr.Name] != i {
 				continue
 			}
 

@@ -103,8 +103,11 @@ func TestRootFS(t *testing.T) {
 	}
 
 	layer1 := tarball{
-		dir{name: "/", uid: 1},
 		file{name: "/file", uid: 0, contents: []byte("from 1")},
+	}
+
+	layer2 := tarball{
+		dir{name: "/", uid: 1},
 	}
 
 	tests := []struct {
@@ -124,15 +127,29 @@ func TestRootFS(t *testing.T) {
 			wantErr: "bad or missing manifest.json",
 		},
 		{
-			name: "basic overwrite, 2 layers",
+			name: "basic file overwrite, layer order mixed",
 			image: tarball{
 				file{name: "layer1/layer.tar", contents: layer1.bytes(t)},
 				file{name: "layer0/layer.tar", contents: layer0.bytes(t)},
 				manifest{"layer0/layer.tar", "layer1/layer.tar"},
 			},
 			want: []file{
-				{name: "/", uid: 1},
+				{name: "/", uid: 0},
 				{name: "/file", uid: 0, contents: []byte("from 1")},
+			},
+		},
+		{
+			name: "directory overwrite retains original dir",
+			image: tarball{
+				file{name: "layer0/layer.tar", contents: layer0.bytes(t)},
+				file{name: "layer1/layer.tar", contents: layer1.bytes(t)},
+				file{name: "layer2/layer.tar", contents: layer2.bytes(t)},
+				manifest{"layer0/layer.tar", "layer1/layer.tar", "layer2/layer.tar"},
+			},
+			want: []file{
+				{name: "/", uid: 0},
+				{name: "/file", uid: 0, contents: []byte("from 1")},
+				{name: "/", uid: 1},
 			},
 		},
 	}
