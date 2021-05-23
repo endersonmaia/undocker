@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"runtime"
 
-	"git.sr.ht/~motiejus/code/undocker/rootfs"
+	"git.sr.ht/~motiejus/undocker/rootfs"
 )
 
 const _usage = `Usage:
