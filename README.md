@@ -6,13 +6,13 @@ Converts a Docker image (a bunch of layers) to a flattened "rootfs" tarball.
 Why?
 ----
 
-Docker images seems to be the lingua franca of distributing application
-containers. These are very wide-spread. However, is Docker the best runtime
-environment? Not for everyone.
+Docker images became a popular way to distribute applications with their
+dependencies. However, Docker itself is not the best runtime environment. At
+least not for everyone.
 
 Undocker bridges the gap between application images (in docker image format)
-and container runtimes: now you can run a Docker image with systemd-nspawn
-and/or lxc, without doing the `docker pull; docker start; docker export` dance.
+and container runtimes: now you can run a Docker image with old-fashioned
+tools: lxc, systemd-nspawn or systemd itself.
 
 Usage -- extract docker image
 -----------------------------
@@ -20,55 +20,49 @@ Usage -- extract docker image
 Download `nginx` docker image from docker hub and convert it to a rootfs:
 
 ```
-skopeo copy docker://docker.io/nginx:latest docker-archive:nginx.tar
-undocker rootfs nginx.tar - | tar -xv
+skopeo copy docker://docker.io/busybox:latest docker-archive:busybox.tar
+undocker rootfs busybox.tar - | tar -xv
 ```
 
-(the same can be done with `docker pull` and `docker save`)
+Almost the same can be done with a combination of `docker pull` and `docker
+save`.
 
 Usage -- systemd-nspawn example
 -------------------------------
 
-Once the image is converted to a root file-system, it can be started using
-classic utilities which expect a rootfs:
+Start with systemd-nspawn:
 
 ```
-systemd-nspawn -D $PWD nginx -g 'daemon off;'
+systemd-nspawn -D $PWD busybox httpd -vfp 8080
 ```
 
-Usage -- lxc example
---------------------
-
-Preparing the image for use with lxc:
+Usage -- plain old systemd
+--------------------------
 
 ```
-undocker rootfs nginx.tar - | xz -T0 > nginx.tar.xz
-undocker lxcconfig nginx.tar config
-tar -cJf meta.tar.xz config
+systemd-run \
+  --wait --pty --collect --service-type=exec \
+  -p PrivateUsers=true \
+  -p DynamicUser=yes \
+  -p ProtectProc=invisible \
+  -p RootDirectory=$PWD \
+  -- busybox httpd -vfp 8080
 ```
 
-Import it to lxc and run it:
+Good things like `PrivateUsers`, `DynamicUser`, `ProtectProc` and other
+[systemd protections][1] are available, just like to any systemd unit.
 
-```
-lxc-create -n bb -t local -- -m meta.tar.xz -f nginx.tar.xz
-lxc-start -F -n bb -s lxc.net.0.type=none
-lxc-start -F -n bb -s lxc.net.0.type=none -- /docker-entrypoint.sh nginx -g "daemon off;"
-```
+Notes & gotchas
+---------------
 
-Note: automatic entrypoint does not work well with parameters with spaces; not
-sure what lxc expects here to make it work.
-
-About the implementation
-------------------------
-
-Extracting docker image layers may be harder than you have thought. See
-`rootfs/doc.go` for more details.
-
-The rootfs code is dependency-free (it uses Go's stdlib alone). The existing
-project dependencies are convenience-only.
+`unocker` does not magically enable you to run containers from the internet. In
+fact, many will need significant tuning or not work at all. Thus you will still
+need to understand what are you running.
 
 Contributions
 -------------
 
 I will accept pull request for code (including tests) and documentation. I am
-unlikely to react to bug reports without a patch.
+unlikely to react to issue reports without a patch.
+
+[1]: https://www.freedesktop.org/software/systemd/man/systemd.exec.html
