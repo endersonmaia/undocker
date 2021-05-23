@@ -12,19 +12,18 @@ import (
 
 const _description = "Flatten a docker container image to a tarball"
 
-type (
-	// Command is an implementation of go-flags.Command
-	Command struct {
-		flattener func(io.ReadSeeker, io.Writer) error
-		Stdout    io.Writer
+// Command is an implementation of go-flags.Command
+type Command struct {
+	flattener func(io.ReadSeeker, io.Writer) error
+	Stdout    io.Writer
 
-		PositionalArgs struct {
-			Infile  goflags.Filename `long:"infile" desc:"Input tarball"`
-			Outfile string           `long:"outfile" desc:"Output path, stdout is '-'"`
-		} `positional-args:"yes" required:"yes"`
-	}
-)
+	PositionalArgs struct {
+		Infile  goflags.Filename `long:"infile" desc:"Input tarball"`
+		Outfile string           `long:"outfile" desc:"Output path, stdout is '-'"`
+	} `positional-args:"yes" required:"yes"`
+}
 
+// NewCommand creates a new Command struct
 func NewCommand() *Command {
 	return &Command{
 		flattener: rootfs.Flatten,
@@ -32,8 +31,11 @@ func NewCommand() *Command {
 	}
 }
 
+// ShortDesc returns the command's short description
 func (*Command) ShortDesc() string { return _description }
-func (*Command) LongDesc() string  { return _description }
+
+// LongDesc returns the command's long description
+func (*Command) LongDesc() string { return _description }
 
 // Execute executes rootfs Command
 func (c *Command) Execute(args []string) (err error) {

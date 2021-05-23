@@ -12,19 +12,18 @@ import (
 
 const _description = "Create an LXC-compatible container configuration"
 
-type (
-	// Command is an implementation of go-flags.Command
-	Command struct {
-		configer func(io.ReadSeeker, io.Writer) error
-		Stdout   io.Writer
+// Command is an implementation of go-flags.Command
+type Command struct {
+	configer func(io.ReadSeeker, io.Writer) error
+	Stdout   io.Writer
 
-		PositionalArgs struct {
-			Infile  goflags.Filename `long:"infile" description:"Input tarball"`
-			Outfile string           `long:"outfile" description:"Output path, stdout is '-'"`
-		} `positional-args:"yes" required:"yes"`
-	}
-)
+	PositionalArgs struct {
+		Infile  goflags.Filename `long:"infile" description:"Input tarball"`
+		Outfile string           `long:"outfile" description:"Output path, stdout is '-'"`
+	} `positional-args:"yes" required:"yes"`
+}
 
+// NewCommand creates a new Command struct
 func NewCommand() *Command {
 	return &Command{
 		configer: lxcconfig.LXCConfig,
@@ -32,8 +31,11 @@ func NewCommand() *Command {
 	}
 }
 
+// ShortDesc returns the command's short description
 func (*Command) ShortDesc() string { return _description }
-func (*Command) LongDesc() string  { return _description }
+
+// LongDesc returns the command's long description
+func (*Command) LongDesc() string { return _description }
 
 // Execute executes lxcconfig Command
 func (c *Command) Execute(args []string) (err error) {
