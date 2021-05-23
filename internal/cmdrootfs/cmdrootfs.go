@@ -9,6 +9,7 @@ import (
 	"go.uber.org/multierr"
 )
 
+// CmdRootFS is "rootfs" command
 type CmdRootFS struct {
 	PositionalArgs struct {
 		Infile  goflags.Filename `long:"infile" description:"Input tarball"`
@@ -16,6 +17,7 @@ type CmdRootFS struct {
 	} `positional-args:"yes" required:"yes"`
 }
 
+// Execute executes CmdRootFS
 func (r *CmdRootFS) Execute(args []string) (err error) {
 	if len(args) != 0 {
 		return errors.New("too many args")

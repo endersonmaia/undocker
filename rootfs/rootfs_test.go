@@ -21,16 +21,16 @@ type (
 
 func TestRootFS(t *testing.T) {
 	layer0 := tarball{
-		dir{Name: "/", Uid: 0},
-		file{Name: "/file", Uid: 0, Contents: bytes.NewBufferString("from 0")},
+		dir{Name: "/", UID: 0},
+		file{Name: "/file", UID: 0, Contents: bytes.NewBufferString("from 0")},
 	}
 
 	layer1 := tarball{
-		file{Name: "/file", Uid: 1, Contents: bytes.NewBufferString("from 1")},
+		file{Name: "/file", UID: 1, Contents: bytes.NewBufferString("from 1")},
 	}
 
 	layer2 := tarball{
-		dir{Name: "/", Uid: 2},
+		dir{Name: "/", UID: 2},
 	}
 
 	tests := []struct {
@@ -57,8 +57,8 @@ func TestRootFS(t *testing.T) {
 				manifest{"layer0/layer.tar", "layer1/layer.tar"},
 			},
 			want: []extractable{
-				dir{Name: "/", Uid: 0},
-				file{Name: "/file", Uid: 1, Contents: bytes.NewBufferString("from 1")},
+				dir{Name: "/", UID: 0},
+				file{Name: "/file", UID: 1, Contents: bytes.NewBufferString("from 1")},
 			},
 		},
 		{
@@ -85,9 +85,9 @@ func TestRootFS(t *testing.T) {
 				manifest{"layer0/layer.tar", "layer1/layer.tar", "layer2/layer.tar"},
 			},
 			want: []extractable{
-				dir{Name: "/", Uid: 0},
-				file{Name: "/file", Uid: 1, Contents: bytes.NewBufferString("from 1")},
-				dir{Name: "/", Uid: 2},
+				dir{Name: "/", UID: 0},
+				file{Name: "/file", UID: 1, Contents: bytes.NewBufferString("from 1")},
+				dir{Name: "/", UID: 2},
 			},
 		},
 		{
