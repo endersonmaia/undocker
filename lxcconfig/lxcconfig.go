@@ -57,8 +57,8 @@ type (
 )
 
 // LXCConfig accepts a Docker container image and returns lxc configuration.
-func LXCConfig(in io.ReadSeeker, wr io.Writer) error {
-	dockerCfg, err := getDockerConfig(in)
+func LXCConfig(rd io.ReadSeeker, wr io.Writer) error {
+	dockerCfg, err := getDockerConfig(rd)
 	if err != nil {
 		return err
 	}
@@ -90,9 +90,9 @@ func (l lxcConfig) WriteTo(wr io.Writer) error {
 	return _lxcTemplate.Execute(wr, l)
 }
 
-func getDockerConfig(in io.ReadSeeker) (dockerConfig, error) {
-	tr := tar.NewReader(in)
-	// get offsets to all json files in the archive
+func getDockerConfig(rd io.ReadSeeker) (dockerConfig, error) {
+	tr := tar.NewReader(rd)
+	// get offsets to all json files rd the archive
 	jsonOffsets := map[string]int64{}
 	for {
 		hdr, err := tr.Next()
@@ -102,19 +102,19 @@ func getDockerConfig(in io.ReadSeeker) (dockerConfig, error) {
 		if hdr.Typeflag != tar.TypeReg {
 			continue
 		}
-		if !strings.HasSuffix(_json, hdr.Name) {
+		if !strings.HasSuffix(hdr.Name, _json) {
 			continue
 		}
-		here, err := in.Seek(0, io.SeekCurrent)
+		here, err := rd.Seek(0, io.SeekCurrent)
 		if err != nil {
 			return dockerConfig{}, err
 		}
 		jsonOffsets[hdr.Name] = here
 	}
 
-	// manifest is the docker manifest in the image
+	// manifest is the docker manifest rd the image
 	var manifest dockerManifest
-	if err := parseJSON(in, jsonOffsets, _manifestJSON, &manifest); err != nil {
+	if err := parseJSON(rd, jsonOffsets, _manifestJSON, &manifest); err != nil {
 		return dockerConfig{}, err
 	}
 	if len(manifest) == 0 {
@@ -122,22 +122,24 @@ func getDockerConfig(in io.ReadSeeker) (dockerConfig, error) {
 	}
 
 	var config dockerConfig
-	if err := parseJSON(in, jsonOffsets, manifest[0].Config, &config); err != nil {
+	if err := parseJSON(rd, jsonOffsets, manifest[0].Config, &config); err != nil {
 		return dockerConfig{}, err
 	}
 
 	return config, nil
 }
 
-func parseJSON(in io.ReadSeeker, offsets map[string]int64, fname string, c interface{}) error {
+//TODO: don't seek to files, read them.
+func parseJSON(rd io.ReadSeeker, offsets map[string]int64, fname string, c interface{}) error {
 	configOffset, ok := offsets[fname]
+	fmt.Printf("jumping to %s in %x\n", fname, configOffset)
 	if !ok {
 		return fmt.Errorf("file %s not found", fname)
 	}
-	if _, err := in.Seek(configOffset, io.SeekStart); err != nil {
+	if _, err := rd.Seek(configOffset, io.SeekStart); err != nil {
 		return fmt.Errorf("seek to %s: %w", fname, err)
 	}
-	tr := tar.NewReader(in)
+	tr := tar.NewReader(rd)
 	if _, err := tr.Next(); err != nil {
 		return err
 	}

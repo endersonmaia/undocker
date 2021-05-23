@@ -187,9 +187,7 @@ func TestRootFS(t *testing.T) {
 }
 
 // Helpers
-type (
-	manifest []string
-)
+type manifest []string
 
 func (m manifest) Tar(tw *tar.Writer) error {
 	b, err := json.Marshal(dockerManifestJSON{{Layers: m}})

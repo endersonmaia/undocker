@@ -12,6 +12,7 @@ go_test(
     srcs = ["lxcconfig_test.go"],
     embed = [":go_default_library"],
     deps = [
+        "//src/undocker/internal/tartest:go_default_library",
         "@com_github_stretchr_testify//assert:go_default_library",
         "@com_github_stretchr_testify//require:go_default_library",
     ],
