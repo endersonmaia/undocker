@@ -62,6 +62,8 @@ def _lxcconfig_impl(ctx):
     )
 
 def lxcbundle(name, src, version):
+    if type(version) != "int":
+        fail("version must be an int, got {}".format(type(version)))
     rootfsname = name + "/_/rootfs"
     rootfs(name = rootfsname, src = src, out = rootfsname + ".tar")
     lxcconfig(name, src = src, out = name + "/_/meta.tar.xz")
