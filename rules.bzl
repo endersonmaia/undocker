@@ -33,3 +33,19 @@ rootfs = rule(
         ),
     },
 )
+
+def _temp_impl(ctx):
+    for f in ctx.files.data:
+        print(f.path)
+    ctx.actions.run_shell(
+        outputs = [ctx.outputs.out],
+        command = "find $@",
+    )
+
+temp = rule(
+    implementation = _temp_impl,
+    attrs = {
+        "data": attr.label(mandatory = True, allow_single_file = True),
+        "out": attr.output(mandatory = True)
+    },
+)
