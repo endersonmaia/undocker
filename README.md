@@ -21,7 +21,7 @@ Download `nginx` docker image from docker hub and convert it to a rootfs:
 
 ```
 skopeo copy docker://docker.io/busybox:latest docker-archive:busybox.tar
-undocker rootfs busybox.tar - | tar -xv
+undocker busybox.tar - | tar -xv
 ```
 
 Almost the same can be done with a combination of `docker pull` and `docker
@@ -55,14 +55,25 @@ Good things like `PrivateUsers`, `DynamicUser`, `ProtectProc` and other
 Notes & gotchas
 ---------------
 
-`unocker` does not magically enable you to run containers from the internet. In
-fact, many will need significant tuning or not work at all. Thus you will still
-need to understand what are you running.
+`unocker` does not magically enable you to run containers from the internet.
+Many will need significant tuning or not work at all. Thus you will still need
+to understand what are you running.
 
 Contributions
 -------------
 
-I will accept pull request for code (including tests) and documentation. I am
-unlikely to react to issue reports without a patch.
+I want this project to be useful for others, but not become a burden for me. If
+undocker fails for you (for example, you found a container that undocker cannot
+extract, or extracts incorrectly), **you** are on the hook to triage and fix
+it.
+
+Therefore, the following contributions are welcome:
+
+- Pull rquests (diffs) with accompanying tests.
+- Documentation.
+
+Issues without accompanying patches will most likely be rejected, with one
+exception: reports about regressions do not have to contain patches, but a
+failing commit is mandatory, and a failing test case is highly appreciated.
 
 [1]: https://www.freedesktop.org/software/systemd/man/systemd.exec.html
