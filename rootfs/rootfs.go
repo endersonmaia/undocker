@@ -4,6 +4,7 @@ import (
 	"archive/tar"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"path/filepath"
 	"strings"
@@ -13,10 +14,11 @@ import (
 
 const (
 	_manifestJSON = "manifest.json"
+	_layerSuffix  = "/layer.tar"
 )
 
 var (
-	ErrBadManifest = errors.New("bad or missing manifest.json")
+	errBadManifest = errors.New("bad or missing manifest.json")
 )
 
 type dockerManifestJSON []struct {
@@ -24,7 +26,7 @@ type dockerManifestJSON []struct {
 	Layers []string `json:"Layers"`
 }
 
-// Rootfs accepts a docker layer tarball and writes it to outfile.
+// RootFS accepts a docker layer tarball and writes it to outfile.
 // 1. create map[string]io.ReadSeeker for each layer.
 // 2. parse manifest.json and get the layer order.
 // 3. go through each layer in order and write:
@@ -36,9 +38,7 @@ type dockerManifestJSON []struct {
 func RootFS(in io.ReadSeeker, out io.Writer) (err error) {
 	tr := tar.NewReader(in)
 	tw := tar.NewWriter(out)
-	defer func() {
-		err = multierr.Append(err, tw.Close())
-	}()
+	defer func() { err = multierr.Append(err, tw.Close()) }()
 	// layerOffsets maps a layer name (a9b123c0daa/layer.tar) to it's offset
 	layerOffsets := map[string]int64{}
 
@@ -60,9 +60,9 @@ func RootFS(in io.ReadSeeker, out io.Writer) (err error) {
 		case filepath.Clean(hdr.Name) == _manifestJSON:
 			dec := json.NewDecoder(tr)
 			if err := dec.Decode(&manifest); err != nil {
-				return err
+				return fmt.Errorf("parse %s: %w", _manifestJSON, err)
 			}
-		case strings.HasSuffix(hdr.Name, "/layer.tar"):
+		case strings.HasSuffix(hdr.Name, _layerSuffix):
 			here, err := in.Seek(0, io.SeekCurrent)
 			if err != nil {
 				return err
@@ -71,15 +71,11 @@ func RootFS(in io.ReadSeeker, out io.Writer) (err error) {
 		}
 	}
 
-	if len(manifest) == 0 {
-		return ErrBadManifest
+	if len(manifest) == 0 || len(layerOffsets) != len(manifest[0].Layers) {
+		return errBadManifest
 	}
 
-	if len(layerOffsets) != len(manifest[0].Layers) {
-		return ErrBadManifest
-	}
-
-	// phase 1.5: enumerate layers
+	// enumerate layers the way they would be laid down in the image
 	layers := make([]int64, len(layerOffsets))
 	for i, name := range manifest[0].Layers {
 		layers[i] = layerOffsets[name]
@@ -88,8 +84,7 @@ func RootFS(in io.ReadSeeker, out io.Writer) (err error) {
 	// file2layer maps a filename to layer number (index in "layers")
 	file2layer := map[string]int{}
 
-	// phase 2: iterate through all layers and save filenames
-	// for all kinds of files.
+	// iterate through all layers and save filenames for all kinds of files.
 	for i, offset := range layers {
 		if _, err := in.Seek(offset, io.SeekStart); err != nil {
 			return err
@@ -124,37 +119,44 @@ func RootFS(in io.ReadSeeker, out io.Writer) (err error) {
 				return err
 			}
 
-			// only directories can have multiple entries with the same name.
+			// Only directories can have multiple entries with the same name.
 			// all other file types cannot.
 			if hdr.Typeflag != tar.TypeDir && file2layer[hdr.Name] != i {
 				continue
 			}
 
-			hdrOut := &tar.Header{
-				Typeflag: hdr.Typeflag,
-				Name:     hdr.Name,
-				Linkname: hdr.Linkname,
-				Size:     hdr.Size,
-				Mode:     int64(hdr.Mode & 0777),
-				Uid:      hdr.Uid,
-				Gid:      hdr.Gid,
-				Uname:    hdr.Uname,
-				Gname:    hdr.Gname,
-				ModTime:  hdr.ModTime,
-				Devmajor: hdr.Devmajor,
-				Devminor: hdr.Devminor,
-				Format:   tar.FormatPAX,
-			}
-
-			if err := tw.WriteHeader(hdrOut); err != nil {
+			if err := writeFile(tr, tw, hdr); err != nil {
 				return err
 			}
+		}
+	}
+	return nil
+}
 
-			if hdr.Typeflag == tar.TypeReg {
-				if _, err := io.Copy(tw, tr); err != nil {
-					return err
-				}
-			}
+func writeFile(tr *tar.Reader, tw *tar.Writer, hdr *tar.Header) error {
+	hdrOut := &tar.Header{
+		Typeflag: hdr.Typeflag,
+		Name:     hdr.Name,
+		Linkname: hdr.Linkname,
+		Size:     hdr.Size,
+		Mode:     int64(hdr.Mode & 0777),
+		Uid:      hdr.Uid,
+		Gid:      hdr.Gid,
+		Uname:    hdr.Uname,
+		Gname:    hdr.Gname,
+		ModTime:  hdr.ModTime,
+		Devmajor: hdr.Devmajor,
+		Devminor: hdr.Devminor,
+		Format:   tar.FormatGNU,
+	}
+
+	if err := tw.WriteHeader(hdrOut); err != nil {
+		return err
+	}
+
+	if hdr.Typeflag == tar.TypeReg {
+		if _, err := io.Copy(tw, tr); err != nil {
+			return err
 		}
 	}
 

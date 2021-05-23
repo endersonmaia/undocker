@@ -50,9 +50,7 @@ func (r *cmdRootFS) Execute(args []string) (err error) {
 	if err != nil {
 		return err
 	}
-	defer func() {
-		err = multierr.Append(err, in.Close())
-	}()
+	defer func() { err = multierr.Append(err, in.Close()) }()
 
 	var out *os.File
 	outf := string(r.PositionalArgs.Outfile)
@@ -64,9 +62,7 @@ func (r *cmdRootFS) Execute(args []string) (err error) {
 			return err
 		}
 	}
-	defer func() {
-		err = multierr.Append(err, out.Close())
-	}()
+	defer func() { err = multierr.Append(err, out.Close()) }()
 
 	return rootfs.RootFS(in, out)
 }
