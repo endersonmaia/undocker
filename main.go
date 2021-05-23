@@ -56,5 +56,5 @@ func (r *cmdRootFS) Execute(args []string) error {
 		return err
 	}
 	defer out.Close()
-	return rootfs.Rootfs(in, out)
+	return rootfs.RootFS(in, out)
 }

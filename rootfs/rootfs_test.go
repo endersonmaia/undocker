@@ -123,6 +123,8 @@ func TestRootFS(t *testing.T) {
 		},
 	}
 
+	assert.Fail(t, "foo")
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			in := bytes.NewReader(tt.image.bytes())
