@@ -61,7 +61,7 @@ def _lxcconfig_impl(ctx):
         runfiles = ctx.runfiles(files = ctx.files.src),
     )
 
-def lxcbundle(name, src, version = ""):
+def lxcbundle(name, src, version):
     rootfsname = name + "/_/rootfs"
     rootfs(name = rootfsname, src = src, out = rootfsname + ".tar")
     lxcconfig(name, src = src, out = name + "/_/meta.tar.xz")
@@ -72,10 +72,7 @@ def lxcbundle(name, src, version = ""):
         cmd = "xz -T0 -f $< > $@",
         message = "XZ",
     )
-    if version:
-        outname = "{}_{}.tar".format(name, version)
-    else:
-        outname = "{}.tar".format(name)
+    outname = "{}.{}.tar".format(name, version)
     pkg_tar(
         name = name,
         srcs = [
