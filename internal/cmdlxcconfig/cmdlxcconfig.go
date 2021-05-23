@@ -13,9 +13,8 @@ import (
 // Command is "lxcconfig" command
 type (
 	Command struct {
+		cmd.BaseCommand
 		PositionalArgs struct {
-			cmd.BaseCommand
-
 			Infile  goflags.Filename `long:"infile" description:"Input tarball"`
 			Outfile string           `long:"outfile" description:"Output path, stdout is '-'"`
 		} `positional-args:"yes" required:"yes"`
@@ -24,6 +23,7 @@ type (
 
 // Execute executes lxcconfig Command
 func (c *Command) Execute(args []string) (err error) {
+	c.BaseCommand.Init()
 	if len(args) != 0 {
 		return errors.New("too many args")
 	}
