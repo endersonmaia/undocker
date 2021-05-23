@@ -14,7 +14,9 @@ _input_container = attr.label(
 )
 
 def _rootfs_impl(ctx):
-    out = ctx.actions.declare_file(ctx.attr.name + ".tar")
+    out = ctx.outputs.out
+    if out == None:
+        out = ctx.actions.declare_file(ctx.attr.name + ".tar")
     ctx.actions.run(
         outputs = [out],
         inputs = ctx.files.src,
@@ -37,6 +39,7 @@ rootfs = rule(
     attrs = {
         "src": _input_container,
         "_undocker": _undocker_cli,
+        "out": attr.output(),
     },
 )
 
@@ -58,6 +61,19 @@ def _lxcconfig_impl(ctx):
         runfiles = ctx.runfiles(files = ctx.files.src),
     )
 
+
+def lxcbundle(name, src):
+    rootfsname = name+"-rootfs"
+    rootfsnametar = rootfsname+"-tar"
+    rootfs(name = rootfsnametar, src = src, out = rootfsname+".tar")
+    lxcconfig(name, src = src)
+    native.genrule(
+        name = rootfsnametar + "-xz",
+        srcs = [rootfsnametar],
+        outs = [rootfsname + ".tar.xz"],
+        cmd = "xz -cf $< > $@",
+    )
+
 _lxcconfig = rule(
     _lxcconfig_impl,
     doc = "Generate lxc config from a docker container image",
@@ -66,6 +82,7 @@ _lxcconfig = rule(
         "_undocker": _undocker_cli,
     },
 )
+
 
 def lxcconfig(name, src):
     _lxcconfig(name = name+"/config", src = src)
@@ -76,16 +93,4 @@ def lxcconfig(name, src):
         remap_paths = {
             name: "",
         },
-    )
-
-
-def lxcbundle(name, src):
-    rootfsname = name+"-rootfs"
-    rootfs(name = rootfsname, src = src)
-    lxcconfig(name, src = src)
-    native.genrule(
-        name = rootfsname + ".xz",
-        srcs = [rootfsname],
-        outs = [rootfsname + ".xz"],
-        cmd = "xz -cf $< > $@",
     )
