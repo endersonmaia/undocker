@@ -59,6 +59,11 @@ Notes & gotchas
 Many will need significant tuning or not work at all; one will still need to
 understand [what's inside](https://xkcd.com/1988/).
 
+Similar Projects
+----------------
+
+* [rootfs_builder](https://github.com/ForAllSecure/rootfs_builder)
+
 Changelog
 ---------
 
@@ -86,7 +91,7 @@ failing commit is mandatory, and a failing test case is highly appreciated.
 LICENSE
 -------
 
-MIT.
+MIT
 
 [1]: https://www.freedesktop.org/software/systemd/man/systemd.exec.html
 [2]: https://fly.io/blog/docker-without-docker/
