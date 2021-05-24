@@ -7,28 +7,43 @@ Why?
 ----
 
 Docker images became a popular way to distribute applications with their
-dependencies. However, Docker itself is not the best runtime environment. At
-least not for everyone. May boring technology run our software.
+dependencies; however, Docker is not the best runtime environment. At least not
+for everyone. May boring technology run our software.
 
 Undocker bridges the gap between application images (in docker image format)
-and container runtimes: now you can run a Docker image with old-fashioned
-tools: lxc, systemd-nspawn or systemd itself.
+and application isolation ("container") runtimes: once the docker image is
+extracted, it can be run with old-fashioned tools: lxc, systemd-nspawn,
+systemd, FreeBSD Jails, and many others.
 
-Usage -- extract docker image
------------------------------
+`unocker` does not magically enable you to run containers from the internet.
+Many will need significant tuning or not work at all; one will still need to
+understand [what's inside](https://xkcd.com/1988/).
+
+Usage: convert docker image to rootfs
+-------------------------------------
 
 Download `busybox` docker image from docker hub and convert it to a rootfs:
 
 ```
-skopeo copy docker://docker.io/busybox:latest docker-archive:busybox.tar
-undocker busybox.tar - | tar -xv
+$ skopeo copy docker://docker.io/busybox:latest docker-archive:busybox.tar
+$ undocker busybox.tar - | tar -tv | head -10
+drwxr-xr-x 0/0               0 2021-05-17 22:07 bin/
+-rwxr-xr-x 0/0         1149184 2021-05-17 22:07 bin/[
+hrwxr-xr-x 0/0               0 2021-05-17 22:07 bin/[[ link to bin/[
+hrwxr-xr-x 0/0               0 2021-05-17 22:07 bin/acpid link to bin/[
+hrwxr-xr-x 0/0               0 2021-05-17 22:07 bin/add-shell link to bin/[
+hrwxr-xr-x 0/0               0 2021-05-17 22:07 bin/addgroup link to bin/[
+hrwxr-xr-x 0/0               0 2021-05-17 22:07 bin/adduser link to bin/[
+hrwxr-xr-x 0/0               0 2021-05-17 22:07 bin/adjtimex link to bin/[
+hrwxr-xr-x 0/0               0 2021-05-17 22:07 bin/ar link to bin/[
+hrwxr-xr-x 0/0               0 2021-05-17 22:07 bin/arch link to bin/[
 ```
 
-You can also refer to [this][2] for other ways to download Docker images. There
+You can also refer [here][2] for other ways to download Docker images. There
 are many.
 
-Usage -- systemd-nspawn example
--------------------------------
+Usage example: systemd-nspawn
+-----------------------------
 
 Start with systemd-nspawn:
 
@@ -36,8 +51,8 @@ Start with systemd-nspawn:
 systemd-nspawn -D $PWD busybox httpd -vfp 8080
 ```
 
-Usage -- plain old systemd
---------------------------
+Usage example: plain old systemd
+--------------------------------
 
 ```
 systemd-run \
@@ -51,13 +66,6 @@ systemd-run \
 
 Good things like `PrivateUsers`, `DynamicUser`, `ProtectProc` and other
 [systemd protections][1] are available, just like to any systemd unit.
-
-Notes & gotchas
----------------
-
-`unocker` does not magically enable you to run containers from the internet.
-Many will need significant tuning or not work at all; one will still need to
-understand [what's inside](https://xkcd.com/1988/).
 
 Similar Projects
 ----------------
@@ -74,19 +82,18 @@ Changelog
 Contributions
 -------------
 
-I want this project to be useful for others, but not become a burden for me. If
-undocker fails for you (for example, you found a container that undocker cannot
-extract, or extracts incorrectly), **you** are on the hook to triage and fix
-it.
+The following contributions may be accepted:
 
-Therefore, the following contributions are welcome:
+- Pull requests (patchsets) with accompanying tests.
+- Regression reports.
 
-- Pull rquests (diffs) with accompanying tests.
-- Documentation.
+If you found a container that undocker cannot extract, or extracts incorrectly
+and you need this that work with undocker, do not submit an issue: submit a
+patchset.
 
-Issues without accompanying patches will most likely be rejected, with one
-exception: reports about regressions do not have to contain patches, but a
-failing commit is mandatory, and a failing test case is highly appreciated.
+Reports of regression reports must provide examples of "works before" and "does
+not work after". Issues without an accompanying patch will most likely be
+rejected.
 
 LICENSE
 -------
