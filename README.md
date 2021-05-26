@@ -15,9 +15,7 @@ and application isolation ("container") runtimes: once the docker image is
 extracted, it can be run with old-fashioned tools: lxc, systemd-nspawn,
 systemd, FreeBSD Jails, and many others.
 
-`unocker` does not magically enable you to run containers from the internet.
-Many will need significant tuning or not work at all; one will still need to
-understand [what's inside](https://xkcd.com/1988/).
+Undocker has no dependencies outside Golang stdlib.
 
 Usage: convert docker image to rootfs
 -------------------------------------
@@ -41,6 +39,10 @@ hrwxr-xr-x 0/0               0 2021-05-17 22:07 bin/arch link to bin/[
 
 You can also refer [here][2] for other ways to download Docker images. There
 are many.
+
+Converting a [1.1GB Docker image with 77
+layers](https://hub.docker.com/r/homeassistant/home-assistant) takes about 4-5
+seconds and on a reasonably powerful Intel laptop.
 
 Usage example: systemd-nspawn
 -----------------------------
