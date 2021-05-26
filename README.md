@@ -41,7 +41,7 @@ You can also refer [here][2] for other ways to download Docker images. There
 are many.
 
 Converting a [1.1GB Docker image with 77
-layers](https://hub.docker.com/r/homeassistant/home-assistant) takes about 4-5
+layers](https://hub.docker.com/r/homeassistant/home-assistant) takes around 4
 seconds and on a reasonably powerful Intel laptop.
 
 Usage example: systemd-nspawn
