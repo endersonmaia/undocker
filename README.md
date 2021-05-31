@@ -1,4 +1,4 @@
-[![godocs.io](http://godocs.io/git.sr.ht/~motiejus/undocker/rootfs?status.svg)](http://godocs.io/git.sr.ht/~motiejus/undocker/rootfs)
+[![godocs.io](http://godocs.io/git.sr.ht/~motiejus/undocker?status.svg)](http://godocs.io/git.sr.ht/~motiejus/undocker)
 
 Undocker
 --------
