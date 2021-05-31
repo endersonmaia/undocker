@@ -1,0 +1,14 @@
+image: alpine/edge
+packages:
+  - go
+sources:
+  - https://git.sr.ht/~motiejus/undocker
+tasks:
+  - test: |
+    cd undocker
+    go test -cover ./...
+  - build: |
+    cd undocker
+    CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build .
+artifacts:
+  - undocker/undocker
