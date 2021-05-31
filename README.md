@@ -79,7 +79,7 @@ Similar Projects
 Changelog
 ---------
 
-**0.1**
+**1.0**
 
 * initial release: `rootfs.Flatten` and a simple command-line application.
 
