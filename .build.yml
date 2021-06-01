@@ -6,6 +6,6 @@ sources:
   - https://git.sr.ht/~motiejus/undocker
 tasks:
   - test: |
-      make -C coverage.html
+      make -C undocker coverage.html
 artifacts:
   - undocker/coverage.html
