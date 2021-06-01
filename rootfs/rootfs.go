@@ -5,7 +5,6 @@ import (
 	"bytes"
 	"compress/gzip"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -18,10 +17,6 @@ const (
 	_tarSuffix    = ".tar"
 	_whReaddir    = ".wh..wh..opq"
 	_whPrefix     = ".wh."
-)
-
-var (
-	errBadManifest = errors.New("bad manifest.json")
 )
 
 type (

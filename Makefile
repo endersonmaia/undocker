@@ -5,7 +5,12 @@ undocker: $(GODEPS)
 
 .PHONY: test
 test:
-	go test -cover ./...
+	go test -race -cover ./...
+
+.PHONY: lint
+lint:
+	staticcheck -f stylish ./...
+	go vet ./...
 
 .INTERMEDIATE: coverage.out
 coverage.out: $(GODEPS)
