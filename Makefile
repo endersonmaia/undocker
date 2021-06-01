@@ -10,8 +10,8 @@ test:
 
 .PHONY: lint
 lint:
-	$(GOBIN)staticcheck -f stylish ./...
 	go vet ./...
+	$(GOBIN)staticcheck -f stylish ./...
 
 .INTERMEDIATE: coverage.out
 coverage.out: $(GODEPS)
