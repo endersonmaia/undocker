@@ -7,7 +7,7 @@ sources:
   - https://git.sr.ht/~motiejus/undocker
 tasks:
   - setup: |
-      GOPATH=/usr/local go get honnef.co/go/tools/cmd/staticcheck
+      go install honnef.co/go/tools/cmd/staticcheck@latest
   - test: |
       make -C undocker coverage.html
   - lint: |

@@ -1,4 +1,5 @@
 GODEPS = $(shell git ls-files '*.go' go.mod go.sum)
+GOBIN = $(shell go env GOPATH)/bin/
 
 undocker: $(GODEPS)
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build
@@ -9,7 +10,7 @@ test:
 
 .PHONY: lint
 lint:
-	staticcheck -f stylish ./...
+	$(GOBIN)staticcheck -f stylish ./...
 	go vet ./...
 
 .INTERMEDIATE: coverage.out
