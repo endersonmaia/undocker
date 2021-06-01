@@ -9,8 +9,14 @@ test:
 	go test -race -cover ./...
 
 .PHONY: lint
-lint:
+lint: vet staticcheck
+
+.PHONY: vet
+vet:
 	go vet ./...
+
+.PHONY: staticcheck
+staticcheck:
 	$(GOBIN)staticcheck -f stylish ./...
 
 .INTERMEDIATE: coverage.out
