@@ -1,6 +1,9 @@
 GODEPS = $(shell git ls-files '*.go' go.mod go.sum)
 GOBIN = $(shell go env GOPATH)/bin/
 
+.PHONY: all
+all: undocker coverage.html
+
 undocker: $(GODEPS)
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build
 
@@ -25,3 +28,7 @@ coverage.out: $(GODEPS)
 
 coverage.html: coverage.out
 	go tool cover -html=$< -o $@
+
+.PHONY: clean
+clean:
+	rm -f coverage.html undocker
