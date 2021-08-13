@@ -5,9 +5,9 @@ import (
 	"bytes"
 	"compress/gzip"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"path/filepath"
 	"strings"
 )
@@ -18,6 +18,8 @@ const (
 	_whReaddir    = ".wh..wh..opq"
 	_whPrefix     = ".wh."
 )
+
+var _gzipMagic = []byte{0x1f, 0x8b}
 
 type (
 	dockerManifestJSON []struct {
@@ -33,9 +35,10 @@ type (
 // Flatten flattens a docker image to a tarball. The underlying io.Writer
 // should be an open file handle, which the caller is responsible for closing
 // themselves
-func Flatten(rd io.ReadSeeker, w io.Writer) (err error) {
+func Flatten(rd io.ReadSeeker, w io.Writer) (_err error) {
 	tr := tar.NewReader(rd)
 	var closer func() error
+	var err error
 
 	// layerOffsets maps a layer name (a9b123c0daa/layer.tar) to it's offset
 	layerOffsets := map[string]int64{}
@@ -95,7 +98,10 @@ func Flatten(rd io.ReadSeeker, w io.Writer) (err error) {
 		if _, err := rd.Seek(no.offset, io.SeekStart); err != nil {
 			return err
 		}
-		tr, closer = openTargz(rd)
+		tr, closer, err = openTargz(rd)
+		if err != nil {
+			return err
+		}
 		for {
 			hdr, err := tr.Next()
 			if err == io.EOF {
@@ -138,8 +144,8 @@ func Flatten(rd io.ReadSeeker, w io.Writer) (err error) {
 		// Avoiding use of multierr: if error is present, return
 		// that. Otherwise return whatever `Close` returns.
 		err1 := tw.Close()
-		if err == nil {
-			err = err1
+		if _err == nil {
+			_err = err1
 		}
 	}()
 	// iterate through all layers, all files, and write files.
@@ -147,7 +153,10 @@ func Flatten(rd io.ReadSeeker, w io.Writer) (err error) {
 		if _, err := rd.Seek(no.offset, io.SeekStart); err != nil {
 			return err
 		}
-		tr, closer = openTargz(rd)
+		tr, closer, err = openTargz(rd)
+		if err != nil {
+			return err
+		}
 		for {
 			hdr, err := tr.Next()
 			if err == io.EOF {
@@ -242,29 +251,31 @@ func validateManifest(
 }
 
 // openTargz creates a tar reader from a targzip or tar.
-//
-// It will try to open a gzip stream, and, if that fails, silently fall back to
-// tar. I will accept a cleaner implementation looking at magic values.
-func openTargz(r io.Reader) (*tar.Reader, func() error) {
-	hdrbuf := &bytes.Buffer{}
-	hdrw := &proxyWriter{w: hdrbuf}
-	gz, err := gzip.NewReader(io.TeeReader(r, hdrw))
-	if err == nil {
-		hdrw.w = ioutil.Discard
-		hdrbuf = nil
-		return tar.NewReader(gz), gz.Close
+func openTargz(rs io.ReadSeeker) (*tar.Reader, func() error, error) {
+	// find out whether the given file is targz or tar
+	head := make([]byte, 2)
+	_, err := io.ReadFull(rs, head)
+	switch {
+	case err == io.ErrUnexpectedEOF:
+		return nil, nil, errors.New("tarball or gzipfile too small")
+	case err != nil:
+		return nil, nil, fmt.Errorf("read error: %w", err)
 	}
-	return tar.NewReader(io.MultiReader(hdrbuf, r)), func() error { return nil }
-}
 
-// proxyWriter is a pass-through writer. Its underlying writer can be changed
-// on-the-fly. Useful when there is a stream that needs to be discarded (change
-// the underlying writer to, say, ioutil.Discard).
-type proxyWriter struct {
-	w io.Writer
-}
+	if _, err := rs.Seek(-2, io.SeekCurrent); err != nil {
+		return nil, nil, fmt.Errorf("seek: %w", err)
+	}
 
-// Write writes a slice to the underlying w.
-func (pw *proxyWriter) Write(p []byte) (int, error) {
-	return pw.w.Write(p)
+	r := rs.(io.Reader)
+	closer := func() error { return nil }
+	if bytes.Equal(head, _gzipMagic) {
+		gzipr, err := gzip.NewReader(r)
+		if err != nil {
+			return nil, nil, fmt.Errorf("gzip.NewReader: %w", err)
+		}
+		closer = gzipr.Close
+		r = gzipr
+	}
+
+	return tar.NewReader(r), closer, nil
 }
