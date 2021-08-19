@@ -52,6 +52,9 @@ func Flatten(rd io.ReadSeeker, w io.Writer) (_err error) {
 		if err == io.EOF {
 			break
 		}
+		if err != nil {
+			return err
+		}
 		if hdr.Typeflag != tar.TypeReg {
 			continue
 		}
