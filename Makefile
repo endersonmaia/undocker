@@ -8,7 +8,7 @@ GOOSARCHS = linux/amd64 \
 			windows/amd64/.exe
 
 define undockertarget
-TARGETS += undocker-$(1)-$(2)$(firstword $(3))
+UNDOCKERS += undocker-$(1)-$(2)$(firstword $(3))
 undocker-$(1)-$(2)$(firstword $(3)): $(GODEPS)
 	CGO_ENABLED=0 GOOS=$(1) GOARCH=$(2) go build -o $$@
 endef
@@ -17,7 +17,7 @@ $(foreach goosarch,$(GOOSARCHS),\
 	$(eval $(call undockertarget,$(word 1,$(subst /, ,$(goosarch))),$(word 2,$(subst /, ,$(goosarch))),$(word 3,$(subst /, ,$(goosarch))))))
 
 .PHONY: all
-all: $(TARGETS) coverage.html
+all: $(UNDOCKERS) coverage.html
 
 .PHONY: test
 test:
@@ -41,6 +41,12 @@ coverage.out: $(GODEPS)
 coverage.html: coverage.out
 	go tool cover -html=$< -o $@
 
+sha256sum.txt: $(UNDOCKERS)
+	sha256sum $(UNDOCKERS) > $@
+
+sha256sum.txt.asc: sha256sum.txt
+	gpg --clearsign $<
+
 .PHONY: clean
 clean:
-	rm -f coverage.html $(TARGETS)
+	rm -f $(UNDOCKERS) coverage.html sha256sum.txt sha256sum.txt.asc
