@@ -12,5 +12,7 @@ tasks:
       make -C undocker coverage.html
   - lint: |
       make -C undocker -j$(nproc) -O lint
+  - all: |
+      make -C undocker -j$(nproc) -O all
 artifacts:
   - undocker/coverage.html
