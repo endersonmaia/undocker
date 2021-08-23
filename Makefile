@@ -8,17 +8,13 @@ GOOSARCHS = linux/amd64 \
 			windows/amd64/.exe
 
 define undockertarget
-TARGETS += undocker-$(strip $(1))-$(strip $(2))$(firstword $(3))
-undocker-$(strip $(1))-$(strip $(2))$(firstword $(3)): $(GODEPS)
-	CGO_ENABLED=0 GOOS=$(strip $(1)) GOARCH=$(strip $(2)) go build -o $$@
+TARGETS += undocker-$(1)-$(2)$(firstword $(3))
+undocker-$(1)-$(2)$(firstword $(3)): $(GODEPS)
+	CGO_ENABLED=0 GOOS=$(1) GOARCH=$(2) go build -o $$@
 endef
 
-$(foreach goosarch,$(GOOSARCHS), \
-	$(eval $(call undockertarget,\
-		$(word 1,$(subst /, ,$(goosarch))),\
-		$(word 2,$(subst /, ,$(goosarch))),\
-		$(word 3,$(subst /, ,$(goosarch))),\
-)))
+$(foreach goosarch,$(GOOSARCHS),\
+	$(eval $(call undockertarget,$(word 1,$(subst /, ,$(goosarch))),$(word 2,$(subst /, ,$(goosarch))),$(word 3,$(subst /, ,$(goosarch))))))
 
 .PHONY: all
 all: $(TARGETS) coverage.html
