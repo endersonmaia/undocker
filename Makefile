@@ -1,11 +1,27 @@
 GODEPS = $(shell git ls-files '*.go' go.mod go.sum)
 GOBIN = $(shell go env GOPATH)/bin/
 
-.PHONY: all
-all: undocker coverage.html
+GOOSARCHS = linux/amd64 \
+			linux/arm64 \
+			darwin/amd64 \
+			darwin/arm64 \
+			windows/amd64/.exe
 
-undocker: $(GODEPS)
-	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build
+define undockertarget
+TARGETS += undocker-$(strip $(1))-$(strip $(2))$(firstword $(3))
+undocker-$(strip $(1))-$(strip $(2))$(firstword $(3)): $(GODEPS)
+	CGO_ENABLED=0 GOOS=$(strip $(1)) GOARCH=$(strip $(2)) go build -o $$@
+endef
+
+$(foreach goosarch,$(GOOSARCHS), \
+	$(eval $(call undockertarget,\
+		$(word 1,$(subst /, ,$(goosarch))),\
+		$(word 2,$(subst /, ,$(goosarch))),\
+		$(word 3,$(subst /, ,$(goosarch))),\
+)))
+
+.PHONY: all
+all: $(TARGETS) coverage.html
 
 .PHONY: test
 test:
@@ -31,4 +47,4 @@ coverage.html: coverage.out
 
 .PHONY: clean
 clean:
-	rm -f coverage.html undocker
+	rm -f coverage.html $(TARGETS)
