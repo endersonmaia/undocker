@@ -9,7 +9,7 @@ GOOSARCHS = $(sort \
 			windows/amd64/.exe \
 			windows/arm64/.exe)
 
-VSN = $(shell git describe --dirty)
+VSN ?= $(shell git describe --dirty)
 VSNHASH = $(shell git rev-parse --verify HEAD)
 LDFLAGS = -ldflags "-X main.Version=$(VSN) -X main.VersionHash=$(VSNHASH)"
 
