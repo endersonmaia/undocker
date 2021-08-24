@@ -6,8 +6,7 @@ GOOSARCHS = $(sort \
 			darwin/arm64 \
 			linux/amd64 \
 			linux/arm64 \
-			windows/amd64/.exe \
-			windows/arm64/.exe)
+			windows/amd64/.exe)
 
 VSN ?= $(shell git describe --dirty)
 VSNHASH = $(shell git rev-parse --verify HEAD)
