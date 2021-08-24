@@ -80,11 +80,7 @@ Similar Projects
 Changelog
 ---------
 
-**1.0.1**
-
-* bugfix: add missing error check when opening the tarball.
-
-**1.0**
+**v1.0**
 
 * initial release: `rootfs.Flatten` and a simple command-line application.
 

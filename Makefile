@@ -2,19 +2,24 @@ GODEPS = $(shell git ls-files '*.go' go.mod go.sum)
 GOBIN = $(shell go env GOPATH)/bin/
 
 GOOSARCHS = $(sort \
-				linux/amd64 \
-				linux/arm64 \
-				darwin/amd64 \
-				darwin/arm64 \
-				windows/amd64/.exe \
-			)
+			darwin/amd64 \
+			darwin/arm64 \
+			linux/amd64 \
+			linux/arm64 \
+			windows/amd64/.exe \
+			windows/arm64/.exe)
 
-VERSION = $(shell git describe --dirty)
-LDFLAGS = -ldflags "-X main.Version=$(VERSION)"
+VSN = $(shell git describe --dirty)
+VSNHASH = $(shell git rev-parse --verify HEAD)
+LDFLAGS = -ldflags "-X main.Version=$(VSN) -X main.VersionHash=$(VSNHASH)"
+
+.PHONY: test
+test:
+	go test -race -cover ./...
 
 define undockertarget
-UNDOCKERS += undocker-$(1)-$(2)-$(VERSION)-$(firstword $(3))
-undocker-$(1)-$(2)-$(VERSION)$(firstword $(3)): $(GODEPS)
+UNDOCKERS += undocker-$(1)-$(2)-$(VSN)$(firstword $(3))
+undocker-$(1)-$(2)-$(VSN)$(firstword $(3)): $(GODEPS)
 	CGO_ENABLED=0 GOOS=$(1) GOARCH=$(2) go build $(LDFLAGS) -o $$@
 endef
 
@@ -22,11 +27,7 @@ $(foreach goosarch,$(GOOSARCHS),\
 	$(eval $(call undockertarget,$(word 1,$(subst /, ,$(goosarch))),$(word 2,$(subst /, ,$(goosarch))),$(word 3,$(subst /, ,$(goosarch))))))
 
 .PHONY: all
-all: $(UNDOCKERS) coverage.html
-
-.PHONY: test
-test:
-	go test -race -cover ./...
+all: $(UNDOCKERS)
 
 .PHONY: lint
 lint: vet staticcheck
@@ -54,4 +55,4 @@ sha256sum.txt.asc: sha256sum.txt
 
 .PHONY: clean
 clean:
-	rm -f $(UNDOCKERS) coverage.html sha256sum.txt sha256sum.txt.asc
+	rm -f undocker-*-v* coverage.html sha256sum.txt sha256sum.txt.asc

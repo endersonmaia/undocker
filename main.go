@@ -11,6 +11,9 @@ import (
 	"git.sr.ht/~motiejus/undocker/rootfs"
 )
 
+var Version = "unknown"
+var VersionHash = "unknown"
+
 const _usage = `Usage:
   %s <infile> <outfile>
 
@@ -19,13 +22,21 @@ Flatten a Docker container image to a root file system.
 Arguments:
   <infile>:  Input Docker container. Tarball.
   <outfile>: Output tarball, the root file system. '-' is stdout.
+
+undocker %s (%s)
+Built with %s
 `
 
 func main() {
 	runtime.GOMAXPROCS(1) // no need to create that many threads
 
 	if len(os.Args) != 3 {
-		fmt.Fprintf(os.Stderr, _usage, filepath.Base(os.Args[0]))
+		fmt.Fprintf(os.Stderr, _usage,
+			filepath.Base(os.Args[0]),
+			Version,
+			VersionHash,
+			runtime.Version(),
+		)
 		os.Exit(1)
 	}
 
