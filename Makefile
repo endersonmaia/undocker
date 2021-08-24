@@ -1,16 +1,21 @@
 GODEPS = $(shell git ls-files '*.go' go.mod go.sum)
 GOBIN = $(shell go env GOPATH)/bin/
 
-GOOSARCHS = linux/amd64 \
-			linux/arm64 \
-			darwin/amd64 \
-			darwin/arm64 \
-			windows/amd64/.exe
+GOOSARCHS = $(sort \
+				linux/amd64 \
+				linux/arm64 \
+				darwin/amd64 \
+				darwin/arm64 \
+				windows/amd64/.exe \
+			)
+
+VERSION = $(shell git describe --dirty)
+LDFLAGS = -ldflags "-X main.Version=$(VERSION)"
 
 define undockertarget
-UNDOCKERS += undocker-$(1)-$(2)$(firstword $(3))
-undocker-$(1)-$(2)$(firstword $(3)): $(GODEPS)
-	CGO_ENABLED=0 GOOS=$(1) GOARCH=$(2) go build -o $$@
+UNDOCKERS += undocker-$(1)-$(2)-$(VERSION)-$(firstword $(3))
+undocker-$(1)-$(2)-$(VERSION)$(firstword $(3)): $(GODEPS)
+	CGO_ENABLED=0 GOOS=$(1) GOARCH=$(2) go build $(LDFLAGS) -o $$@
 endef
 
 $(foreach goosarch,$(GOOSARCHS),\
