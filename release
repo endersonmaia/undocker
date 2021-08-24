@@ -6,24 +6,24 @@ err() {
     exit 1
 }
 
-[[ -n "$(git status --porcelain)" ]] && \
+git status --porcelain | grep -q "" &&
     err "working tree is dirty, commit your changes first."
 
 [[ ! "$1" =~ ^v([0-9]+)\.([0-9]+)(\.([0-9]+))?$ ]] && \
     err "arg1 accepts the following formats: v1.0 v1.0.0"
 
-[[ -n "$(git tag | grep "^$1$")" ]] && \
+git tag | grep -q "^$1$" &&
     err "tag $1 already exists"
 
 last_tag=$(git tag | tail -1)
 
-make -B -j$(nproc) VSN=$1 sha256sum.txt.asc
+make -B -j"$(nproc)" VSN="$1" sha256sum.txt.asc
 
 {
-    echo undocker $1
+    echo undocker "$1"
     echo
-    echo Changelog since $last_tag:
-    git log --pretty=format:"- [%cn] %s" $last_tag..HEAD
+    echo Changelog since "$last_tag":
+    git log --pretty=format:"- [%cn] %s" "$last_tag"..HEAD
     echo
     echo
     echo sha256sums of released binaries:

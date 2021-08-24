@@ -3,6 +3,7 @@ packages:
   - go
   - git
   - make
+  - shellcheck
 sources:
   - https://git.sr.ht/~motiejus/undocker
 tasks:
@@ -12,6 +13,7 @@ tasks:
       make -C undocker coverage.html
   - lint: |
       make -C undocker -O -j$(nproc) lint
+      shellcheck undocker/release
   - binaries: |
       make -C undocker -O -j$(nproc) sha256sum.txt
       cat undocker/sha256sum.txt
