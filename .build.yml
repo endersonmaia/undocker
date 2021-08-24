@@ -13,7 +13,6 @@ tasks:
       make -C undocker coverage.html
   - lint: |
       make -C undocker -O -j$(nproc) lint
-      shellcheck undocker/release
   - binaries: |
       make -C undocker -O -j$(nproc) sha256sum.txt
       cat undocker/sha256sum.txt

@@ -1,3 +1,4 @@
+SCRIPTS = $(shell awk '/#!\/bin\/(ba)?sh/&&FNR==1{print FILENAME}' $(shell git ls-files))
 GODEPS = $(shell git ls-files '*.go' go.mod go.sum)
 GOBIN = $(shell go env GOPATH)/bin/
 
@@ -29,15 +30,10 @@ $(foreach goosarch,$(GOOSARCHS),\
 all: $(UNDOCKERS)
 
 .PHONY: lint
-lint: vet staticcheck
-
-.PHONY: vet
-vet:
+lint:
 	go vet ./...
-
-.PHONY: staticcheck
-staticcheck:
 	$(GOBIN)staticcheck -f stylish ./...
+	shellcheck $(SCRIPTS)
 
 .INTERMEDIATE: coverage.out
 coverage.out: $(GODEPS)
