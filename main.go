@@ -53,15 +53,15 @@ type command struct {
 	Stdout    io.Writer
 }
 
-func (c *command) execute(infile string, outfile string) (err error) {
+func (c *command) execute(infile string, outfile string) (_err error) {
 	rd, err := os.Open(infile)
 	if err != nil {
 		return err
 	}
 	defer func() {
-		err1 := rd.Close()
-		if err == nil {
-			err = err1
+		err := rd.Close()
+		if _err == nil {
+			_err = err
 		}
 	}()
 
@@ -74,9 +74,11 @@ func (c *command) execute(infile string, outfile string) (err error) {
 			return fmt.Errorf("create: %w", err)
 		}
 		defer func() {
-			err1 := outf.Close()
-			if err == nil {
-				err = err1
+			err := outf.Close()
+			if _err != nil {
+				os.Remove(outfile)
+			} else {
+				_err = err
 			}
 		}()
 		out = outf
