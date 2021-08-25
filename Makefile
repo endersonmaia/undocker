@@ -1,30 +1,27 @@
 SCRIPTS = $(shell awk '/#!\/bin\/(ba)?sh/&&FNR==1{print FILENAME}' $(shell git ls-files))
 GODEPS = $(shell git ls-files '*.go' go.mod go.sum)
 GOBIN = $(shell go env GOPATH)/bin/
-
-GOOSARCHS = $(sort \
-			darwin/amd64 \
-			darwin/arm64 \
-			linux/amd64 \
-			linux/arm64 \
-			windows/amd64/.exe)
+GOOSARCHS = $(sort darwin/amd64 linux/amd64)
 
 VSN ?= $(shell git describe --dirty)
 VSNHASH = $(shell git rev-parse --verify HEAD)
 LDFLAGS = -ldflags "-X main.Version=$(VSN) -X main.VersionHash=$(VSNHASH)"
+
+undocker: ## builds binary for the current architecture
+	CGO_ENABLED=0 go build $(LDFLAGS) -o $@
 
 .PHONY: test
 test:
 	go test -race -cover ./...
 
 define undockertarget
-UNDOCKERS += undocker-$(1)-$(2)-$(VSN)$(firstword $(3))
-undocker-$(1)-$(2)-$(VSN)$(firstword $(3)): $(GODEPS)
+UNDOCKERS += undocker-$(1)-$(2)-$(VSN)
+undocker-$(1)-$(2)-$(VSN): $(GODEPS)
 	CGO_ENABLED=0 GOOS=$(1) GOARCH=$(2) go build $(LDFLAGS) -o $$@
 endef
 
 $(foreach goosarch,$(GOOSARCHS),\
-	$(eval $(call undockertarget,$(word 1,$(subst /, ,$(goosarch))),$(word 2,$(subst /, ,$(goosarch))),$(word 3,$(subst /, ,$(goosarch))))))
+	$(eval $(call undockertarget,$(word 1,$(subst /, ,$(goosarch))),$(word 2,$(subst /, ,$(goosarch))))))
 
 .PHONY: all
 all: $(UNDOCKERS)

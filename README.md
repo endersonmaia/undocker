@@ -20,6 +20,19 @@ systemd, FreeBSD Jails, and many others.
 
 Undocker has no dependencies outside Golang stdlib.
 
+Installation
+------------
+
+We recommend using [officially released binaries][3]. To build the project
+instead, run:
+
+```
+$ make undocker
+```
+
+The number of officially released binaries is quite limited. If you'd like me
+to expand a list, please contribute a patch to the Makefile.
+
 Usage: convert docker image to rootfs
 -------------------------------------
 
@@ -107,3 +120,4 @@ MIT
 
 [1]: https://www.freedesktop.org/software/systemd/man/systemd.exec.html
 [2]: https://fly.io/blog/docker-without-docker/
+[3]: http://git.sr.ht/~motiejus/undocker
