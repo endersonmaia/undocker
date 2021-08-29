@@ -34,6 +34,7 @@ func TestRootFS(t *testing.T) {
 
 	tests := []struct {
 		name    string
+		opts    []Option
 		image   tarball
 		want    []extractable
 		wantErr string
@@ -54,7 +55,7 @@ func TestRootFS(t *testing.T) {
 			wantErr: "layer0/layer.tar defined in manifest, missing in tarball",
 		},
 		{
-			name: "basic file overwrite, layer order mixed",
+			name: "ok: basic file overwrite, layer order mixed",
 			image: tarball{
 				file{Name: "layer1/layer.tar", Contents: layer1.Buffer()},
 				file{Name: "layer0/layer.tar", Contents: layer0.Buffer()},
@@ -172,7 +173,7 @@ func TestRootFS(t *testing.T) {
 			},
 		},
 		{
-			name: "archived layer",
+			name: "compressed layer",
 			image: tarball{
 				file{Name: "layer1/layer.tar", Contents: layer1.Gzip()},
 				file{Name: "layer0/layer.tar", Contents: layer0.Gzip()},
@@ -183,6 +184,19 @@ func TestRootFS(t *testing.T) {
 				file{Name: "/file", UID: 1, Contents: bytes.NewBufferString("from 1")},
 			},
 		},
+		{
+			name: "ok: add a file prefix",
+			opts: []Option{WithFilePrefix("/opt")},
+			image: tarball{
+				file{Name: "layer1/layer.tar", Contents: layer1.Buffer()},
+				file{Name: "layer0/layer.tar", Contents: layer0.Buffer()},
+				manifest{"layer0/layer.tar", "layer1/layer.tar"},
+			},
+			want: []extractable{
+				dir{Name: "/opt/", UID: 0},
+				file{Name: "/opt/file", UID: 1, Contents: bytes.NewBufferString("from 1")},
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -190,7 +204,7 @@ func TestRootFS(t *testing.T) {
 			in := bytes.NewReader(tt.image.Buffer().Bytes())
 			out := bytes.Buffer{}
 
-			err := Flatten(in, &out)
+			err := Flatten(in, &out, tt.opts...)
 			if tt.wantErr != "" {
 				if err == nil {
 					t.Fatal("expected error, got nil")

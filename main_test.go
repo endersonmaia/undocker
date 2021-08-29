@@ -9,6 +9,8 @@ import (
 	"path/filepath"
 	"regexp"
 	"testing"
+
+	"git.sr.ht/~motiejus/undocker/rootfs"
 )
 
 func TestExecute(t *testing.T) {
@@ -17,7 +19,7 @@ func TestExecute(t *testing.T) {
 	tests := []struct {
 		name      string
 		fixture   func(*testing.T, string)
-		flattener func(io.ReadSeeker, io.Writer) error
+		flattener func(io.ReadSeeker, io.Writer, ...rootfs.Option) error
 		infile    string
 		outfile   string
 		wantErr   string
@@ -99,7 +101,7 @@ func TestExecute(t *testing.T) {
 			inf := filepath.Join(dir, tt.infile)
 
 			c := &command{Stdout: &stdout, flattener: tt.flattener}
-			err := c.execute(inf, tt.outfile)
+			err := c.execute(inf, tt.outfile, "")
 
 			if tt.assertion != nil {
 				tt.assertion(t, dir)
@@ -135,11 +137,11 @@ func TestExecute(t *testing.T) {
 	}
 }
 
-func flattenPassthrough(r io.ReadSeeker, w io.Writer) error {
+func flattenPassthrough(r io.ReadSeeker, w io.Writer, _ ...rootfs.Option) error {
 	_, err := io.Copy(w, r)
 	return err
 }
 
-func flattenBad(_ io.ReadSeeker, _ io.Writer) error {
+func flattenBad(_ io.ReadSeeker, _ io.Writer, _ ...rootfs.Option) error {
 	return errors.New("some error")
 }
