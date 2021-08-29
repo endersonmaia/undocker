@@ -24,7 +24,7 @@ $(foreach goosarch,$(GOOSARCHS),\
 	$(eval $(call undockertarget,$(word 1,$(subst /, ,$(goosarch))),$(word 2,$(subst /, ,$(goosarch))))))
 
 .PHONY: all
-all: $(UNDOCKERS)
+all: $(UNDOCKERS) sha256sum-$(VSN).txt
 
 .PHONY: lint
 lint:
