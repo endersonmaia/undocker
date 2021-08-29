@@ -153,9 +153,8 @@ func Flatten(rd io.ReadSeeker, w io.Writer, opts ...Option) (_err error) {
 	defer func() {
 		// Avoiding use of multierr: if error is present, return
 		// that. Otherwise return whatever `Close` returns.
-		err1 := tw.Close()
-		if _err == nil {
-			_err = err1
+		if err := tw.Close(); err != nil && _err == nil {
+			_err = err
 		}
 	}()
 	// iterate through all layers, all files, and write files.
