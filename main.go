@@ -2,7 +2,6 @@
 package main
 
 import (
-	"flag"
 	"fmt"
 	"io"
 	"os"
@@ -16,56 +15,33 @@ var Version = "unknown"
 var VersionHash = "unknown"
 
 const _usage = `Usage:
-  %s [OPTION]... <infile> <outfile>
+  %s <infile> <outfile>
 
 Flatten a Docker container image to a root file system.
 
 Arguments:
-  <infile>   Input Docker container. Tarball.
-  <outfile>  Output tarball, the root file system. '-' is stdout.
-
-Options:
-  --prefix=<prefix>  prefix all destination files with a given string.
+  <infile>:  Input Docker container. Tarball.
+  <outfile>: Output tarball, the root file system. '-' is stdout.
 
 undocker %s (%s)
 Built with %s
 `
 
-func usage(pre string, out io.Writer) {
-	fmt.Fprintf(out, pre+_usage,
-		filepath.Base(os.Args[0]),
-		Version,
-		VersionHash,
-		runtime.Version(),
-	)
-}
-
-func usageErr(pre string) {
-	usage(pre, os.Stderr)
-	os.Exit(2)
-}
-
 func main() {
 	runtime.GOMAXPROCS(1) // no need to create that many threads
 
-	var filePrefix string
-	fs := flag.NewFlagSet("undocker", flag.ExitOnError)
-	fs.Usage = func() { usageErr("") }
-	fs.StringVar(&filePrefix, "prefix", "", "prefix files in the tarball")
-
-	if len(os.Args) == 1 {
-		usageErr("")
-	}
-
-	_ = fs.Parse(os.Args[1:]) // ExitOnError captures it
-
-	args := fs.Args()
-	if len(args) != 2 {
-		usageErr("invalid number of arguments\n")
+	if len(os.Args) != 3 {
+		fmt.Fprintf(os.Stderr, _usage,
+			filepath.Base(os.Args[0]),
+			Version,
+			VersionHash,
+			runtime.Version(),
+		)
+		os.Exit(1)
 	}
 
 	c := &command{flattener: rootfs.Flatten, Stdout: os.Stdout}
-	if err := c.execute(args[0], args[1], filePrefix); err != nil {
+	if err := c.execute(os.Args[1], os.Args[2]); err != nil {
 		fmt.Printf("Error: %v\n", err)
 		os.Exit(1)
 	}
@@ -73,11 +49,11 @@ func main() {
 }
 
 type command struct {
-	flattener func(io.ReadSeeker, io.Writer, ...rootfs.Option) error
+	flattener func(io.ReadSeeker, io.Writer) error
 	Stdout    io.Writer
 }
 
-func (c *command) execute(infile, outfile, filePrefix string) (_err error) {
+func (c *command) execute(infile string, outfile string) (_err error) {
 	rd, err := os.Open(infile)
 	if err != nil {
 		return err
@@ -108,5 +84,5 @@ func (c *command) execute(infile, outfile, filePrefix string) (_err error) {
 		out = outf
 	}
 
-	return c.flattener(rd, out, rootfs.WithFilePrefix(filePrefix))
+	return c.flattener(rd, out)
 }

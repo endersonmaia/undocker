@@ -35,14 +35,7 @@ type (
 // Flatten flattens a docker image to a tarball. The underlying io.Writer
 // should be an open file handle, which the caller is responsible for closing
 // themselves
-func Flatten(rd io.ReadSeeker, w io.Writer, opts ...Option) (_err error) {
-	options := options{
-		filePrefix: "",
-	}
-	for _, o := range opts {
-		o.apply(&options)
-	}
-
+func Flatten(rd io.ReadSeeker, w io.Writer) (_err error) {
 	tr := tar.NewReader(rd)
 	var closer func() error
 	var err error
@@ -183,8 +176,7 @@ func Flatten(rd io.ReadSeeker, w io.Writer, opts ...Option) (_err error) {
 			if hdr.Typeflag != tar.TypeDir && file2layer[hdr.Name] != i {
 				continue
 			}
-			prefix := options.filePrefix
-			if err := writeFile(tr, tw, hdr, prefix); err != nil {
+			if err := writeFile(tr, tw, hdr); err != nil {
 				return err
 			}
 		}
@@ -195,10 +187,10 @@ func Flatten(rd io.ReadSeeker, w io.Writer, opts ...Option) (_err error) {
 	return nil
 }
 
-func writeFile(tr *tar.Reader, tw *tar.Writer, hdr *tar.Header, prefix string) error {
+func writeFile(tr *tar.Reader, tw *tar.Writer, hdr *tar.Header) error {
 	hdrOut := &tar.Header{
 		Typeflag: hdr.Typeflag,
-		Name:     prefix + hdr.Name,
+		Name:     hdr.Name,
 		Linkname: hdr.Linkname,
 		Size:     hdr.Size,
 		Mode:     int64(hdr.Mode & 0777),
