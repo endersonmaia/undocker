@@ -39,12 +39,12 @@ coverage.out: $(GODEPS)
 coverage.html: coverage.out
 	go tool cover -html=$< -o $@
 
-sha256sum.txt: $(UNDOCKERS)
+sha256sum-$(VSN).txt: $(UNDOCKERS)
 	sha256sum $(UNDOCKERS) > $@
 
-sha256sum.txt.asc: sha256sum.txt
+sha256sum-$(VSN).txt.asc: sha256sum-$(VSN).txt
 	gpg --clearsign $<
 
 .PHONY: clean
 clean:
-	rm -f undocker-*-v* coverage.html sha256sum.txt sha256sum.txt.asc
+	rm -f undocker-*-v* coverage.html sha256sum*.txt sha256sum*.txt.asc
