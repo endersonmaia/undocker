@@ -26,6 +26,9 @@ $(foreach goosarch,$(GOOSARCHS),\
 .PHONY: all
 all: $(UNDOCKERS) sha256sum-$(VSN).txt
 
+.PHONY: sha256sum-asc
+sha256sum-asc: sha256sum-$(VSN).txt.asc
+
 .PHONY: lint
 lint:
 	go vet ./...

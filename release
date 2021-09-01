@@ -9,7 +9,10 @@ err() {
 git status --porcelain | grep -q "" &&
     err "working tree is dirty, commit your changes first."
 
-[[ ! "$1" =~ ^v([0-9]+)\.([0-9]+)(\.([0-9]+))?$ ]] && \
+[[ -f sha256sum-* ]] &&
+    err "found artifacts from previous release, delete them first"
+
+[[ "$1" =~ ^v([0-9]+)\.([0-9]+)(\.([0-9]+))?$ ]] || \
     err "arg1 accepts the following formats: v1.0 v1.0.0"
 
 git tag | grep -q "^$1$" &&
@@ -17,7 +20,7 @@ git tag | grep -q "^$1$" &&
 
 last_tag=$(git tag | tail -1)
 
-make -B -j"$(nproc)" VSN="$1" sha256sum.txt.asc
+make -B -j"$(nproc)" VSN="$1" sha256sum-asc
 
 {
     echo undocker "$1"
@@ -27,6 +30,6 @@ make -B -j"$(nproc)" VSN="$1" sha256sum.txt.asc
     echo
     echo
     echo sha256sums of released binaries:
-    cat sha256sum.txt
+    cat sha256sum-*.txt
     echo
 } | git tag -u motiejus@jakstys.lt -F - "$1"
