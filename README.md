@@ -40,25 +40,25 @@ Download `busybox` docker image from docker hub and convert it to a rootfs:
 
 ```
 $ skopeo copy docker://docker.io/busybox:latest docker-archive:busybox.tar
-$ undocker busybox.tar - | tar -tv | head -10
-drwxr-xr-x 0/0               0 2021-05-17 22:07 bin/
--rwxr-xr-x 0/0         1149184 2021-05-17 22:07 bin/[
-hrwxr-xr-x 0/0               0 2021-05-17 22:07 bin/[[ link to bin/[
-hrwxr-xr-x 0/0               0 2021-05-17 22:07 bin/acpid link to bin/[
-hrwxr-xr-x 0/0               0 2021-05-17 22:07 bin/add-shell link to bin/[
-hrwxr-xr-x 0/0               0 2021-05-17 22:07 bin/addgroup link to bin/[
-hrwxr-xr-x 0/0               0 2021-05-17 22:07 bin/adduser link to bin/[
-hrwxr-xr-x 0/0               0 2021-05-17 22:07 bin/adjtimex link to bin/[
-hrwxr-xr-x 0/0               0 2021-05-17 22:07 bin/ar link to bin/[
-hrwxr-xr-x 0/0               0 2021-05-17 22:07 bin/arch link to bin/[
+$ undocker busybox.tar - | tar -xv | sponge | head -10; echo '<...>'
+bin/
+bin/[
+bin/[[
+bin/acpid
+bin/add-shell
+bin/addgroup
+bin/adduser
+bin/adjtimex
+bin/ar
+bin/arch
+<...>
 ```
 
-You can also refer [here][2] for other ways to download Docker images. There
-are many.
+Refer [here][2] for other ways to download Docker images. There are many.
 
-Converting a [1.1GB Docker image with 77
-layers](https://hub.docker.com/r/homeassistant/home-assistant) takes around 4
-seconds and on a reasonably powerful Intel laptop.
+On author's laptop converting a [1.1GB Docker image with 77
+layers](https://hub.docker.com/r/homeassistant/home-assistant) takes around 3
+seconds and uses ~65MB of residential memory.
 
 Usage example: systemd-nspawn
 -----------------------------
