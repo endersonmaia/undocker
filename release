@@ -9,8 +9,9 @@ err() {
 git status --porcelain | grep -q "" &&
     err "working tree is dirty, commit your changes first."
 
-[[ -f sha256sum-* ]] &&
-    err "found artifacts from previous release, delete them first"
+for file in sha256sum-*; do
+    err "found $file from previous release, delete it first"
+done
 
 [[ "$1" =~ ^v([0-9]+)\.([0-9]+)(\.([0-9]+))?$ ]] || \
     err "arg1 accepts the following formats: v1.0 v1.0.0"
