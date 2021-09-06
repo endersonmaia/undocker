@@ -1,6 +1,5 @@
 SCRIPTS = $(shell awk '/#!\/bin\/(ba)?sh/&&FNR==1{print FILENAME}' $(shell git ls-files))
 GODEPS = $(shell git ls-files '*.go' go.mod go.sum)
-GOBIN = $(shell go env GOPATH)/bin/
 GOOSARCHS = $(sort darwin/amd64 linux/amd64)
 
 VSN ?= $(shell git describe --dirty)
@@ -32,7 +31,7 @@ sha256sum-asc: sha256sum-$(VSN).txt.asc
 .PHONY: lint
 lint:
 	go vet ./...
-	$(GOBIN)staticcheck -f stylish ./...
+	$(shell go env GOPATH)/bin/staticcheck -f stylish ./...
 	shellcheck $(SCRIPTS)
 
 .INTERMEDIATE: coverage.out
