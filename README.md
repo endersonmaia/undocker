@@ -23,15 +23,11 @@ Undocker has no dependencies outside Golang stdlib.
 Installation
 ------------
 
-We recommend using [officially released binaries][3]. To build the project
-instead, run:
+You may use [officially released binaries][3], or build it:
 
 ```
 $ make undocker
 ```
-
-The number of officially released binaries is quite limited. If you'd like me
-to expand a list, please contribute a patch to the Makefile.
 
 Usage: convert docker image to rootfs
 -------------------------------------
@@ -60,30 +56,21 @@ On author's laptop converting a [1.1GB Docker image with 77
 layers](https://hub.docker.com/r/homeassistant/home-assistant) takes around 3
 seconds and uses ~65MB of residential memory.
 
-Usage example: systemd-nspawn
------------------------------
-
-Start with systemd-nspawn:
-
-```
-systemd-nspawn -D $PWD busybox httpd -vfp 8080
-```
-
-Usage example: plain old systemd
---------------------------------
+Usage example: systemd
+----------------------
 
 ```
 systemd-run \
   --wait --pty --collect --service-type=exec \
+  -p RootDirectory=$PWD \
+  -p ProtectProc=invisible \
   -p PrivateUsers=true \
   -p DynamicUser=yes \
-  -p ProtectProc=invisible \
-  -p RootDirectory=$PWD \
   -- busybox httpd -vfp 8080
 ```
 
-Good things like `PrivateUsers`, `DynamicUser`, `ProtectProc` and other
-[systemd protections][1] are available, just like to any systemd unit.
+[Systemd protections][1] like `PrivateUsers`, `DynamicUser`, `ProtectProc` and
+others are available, just like to any systemd unit.
 
 Similar Projects
 ----------------
@@ -102,7 +89,7 @@ Contributions
 
 The following contributions may be accepted:
 
-- Pull requests (patchsets) with accompanying tests.
+- Patchsets, with accompanying tests.
 - Regression reports.
 
 If you found a container that undocker cannot extract, or extracts incorrectly
@@ -113,6 +100,12 @@ Reports of regression reports must provide examples of "works before" and "does
 not work after". Issues without an accompanying patch will most likely be
 rejected.
 
+Communication
+-------------
+
+Use [~motiejus/undocker@lists.sr.ht](mailto:~motiejus/undocker@lists.sr.ht) for
+questions or patches. Subscribe [here][4].
+
 LICENSE
 -------
 
@@ -121,3 +114,4 @@ MIT
 [1]: https://www.freedesktop.org/software/systemd/man/systemd.exec.html
 [2]: https://fly.io/blog/docker-without-docker/
 [3]: http://git.sr.ht/~motiejus/undocker
+[4]: https://lists.sr.ht/~motiejus/undocker
