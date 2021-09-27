@@ -18,16 +18,19 @@ and application isolation ("container") runtimes: once the docker image is
 extracted, it can be run with old-fashioned tools: lxc, systemd-nspawn,
 systemd, FreeBSD Jails, and many others.
 
-Undocker has no dependencies outside Golang stdlib.
 
 Installation
 ------------
 
-You may use [officially released binaries][3], or build it:
+Build it like this for the "current" platform:
 
 ```
 $ make undocker
 ```
+
+`make -B` will print the extra flags (`-X <...>`) for cross-compiling with
+other archs. It's all `go build <...>` in the back, and depends only on Go's
+compiler and stdlib.
 
 Usage: convert docker image to rootfs
 -------------------------------------
