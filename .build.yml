@@ -13,5 +13,7 @@ tasks:
       make -C undocker coverage.html
   - lint: |
       make -C undocker -O -j$(nproc) lint
+  - usage: |
+      ./undocker/undocker |& tee /dev/stderr | grep -q "Built with "
 artifacts:
   - undocker/coverage.html
