@@ -14,6 +14,8 @@ tasks:
   - lint: |
       make -C undocker -O -j$(nproc) lint
   - usage: |
-      ./undocker/undocker |& tee /dev/stderr | grep -q "Built with "
+      # like 'grep -q', but prints output too.
+      # | tee /dev/stderr doesn't work on sourcehut workers; permission denied.
+      ./undocker/undocker |& awk 'BEGIN{c=1};/Built with /{c=0};{print};END{exit c}'
 artifacts:
   - undocker/coverage.html
