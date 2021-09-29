@@ -13,8 +13,5 @@ tasks:
       make -C undocker coverage.html
   - lint: |
       make -C undocker -O -j$(nproc) lint
-  - binaries: |
-      make -C undocker -O -j$(nproc) all
-      cat undocker/sha256sum-*.txt
 artifacts:
   - undocker/coverage.html
