@@ -69,7 +69,7 @@ func Flatten(rd io.ReadSeeker, w io.Writer) (_err error) {
 			if err != nil {
 				return err
 			}
-			layerOffsets[hdr.Name] = here
+			layerOffsets[strings.TrimPrefix(hdr.Name, "./")] = here
 		}
 	}
 
@@ -82,7 +82,7 @@ func Flatten(rd io.ReadSeeker, w io.Writer) (_err error) {
 	for i, name := range manifest[0].Layers {
 		layers[i] = nameOffset{
 			name:   name,
-			offset: layerOffsets[name],
+			offset: layerOffsets[strings.TrimPrefix(name, "./")],
 		}
 	}
 
