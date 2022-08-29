@@ -26,4 +26,4 @@ coverage.html: coverage.out
 
 .PHONY: clean
 clean:
-	rm -f undocker-*-v* coverage.html
+	rm -f undocker coverage.html
