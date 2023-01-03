@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"errors"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -28,7 +27,7 @@ func TestExecute(t *testing.T) {
 			infile: "t10-in.txt",
 			fixture: func(t *testing.T, dir string) {
 				fname := filepath.Join(dir, "t10-in.txt")
-				if err := ioutil.WriteFile(fname, _foo, 0644); err != nil {
+				if err := os.WriteFile(fname, _foo, 0644); err != nil {
 					t.Fatalf("unexpected error: %v", err)
 				}
 			},
@@ -39,7 +38,7 @@ func TestExecute(t *testing.T) {
 			infile: "t20-in.txt",
 			fixture: func(t *testing.T, dir string) {
 				fname := filepath.Join(dir, "t20-in.txt")
-				if err := ioutil.WriteFile(fname, _foo, 0644); err != nil {
+				if err := os.WriteFile(fname, _foo, 0644); err != nil {
 					t.Fatalf("unexpected error: %v", err)
 				}
 			},
@@ -50,7 +49,7 @@ func TestExecute(t *testing.T) {
 			infile: "t30-in.txt",
 			fixture: func(t *testing.T, dir string) {
 				fname := filepath.Join(dir, "t30-in.txt")
-				if err := ioutil.WriteFile(fname, _foo, 0644); err != nil {
+				if err := os.WriteFile(fname, _foo, 0644); err != nil {
 					t.Fatalf("unexpected error: %v", err)
 				}
 			},
@@ -122,7 +121,7 @@ func TestExecute(t *testing.T) {
 			if tt.outfile == "-" {
 				out = stdout.Bytes()
 			} else {
-				out, err = ioutil.ReadFile(tt.outfile)
+				out, err = os.ReadFile(tt.outfile)
 				if err != nil {
 					t.Fatalf("unexpected error: %v", err)
 				}
