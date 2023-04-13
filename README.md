@@ -1,5 +1,4 @@
-[![godocs.io](http://godocs.io/git.sr.ht/~motiejus/undocker?status.svg)](http://godocs.io/git.sr.ht/~motiejus/undocker)
-[![builds.sr.ht status](https://builds.sr.ht/~motiejus/undocker.svg)](https://builds.sr.ht/~motiejus/undocker?)
+[![godocs.io](http://godocs.io/git.jakstys.lt/motiejus/undocker?status.svg)](http://godocs.io/git.jakstys.lt/motiejus/undocker)
 
 Undocker
 --------
@@ -106,8 +105,7 @@ rejected.
 Communication
 -------------
 
-Use [~motiejus/undocker@lists.sr.ht](mailto:~motiejus/undocker@lists.sr.ht) for
-questions or patches. Subscribe [here][4].
+Feel free to ping me [directly][motiejus-comms].
 
 LICENSE
 -------
@@ -116,5 +114,5 @@ MIT
 
 [1]: https://www.freedesktop.org/software/systemd/man/systemd.exec.html
 [2]: https://fly.io/blog/docker-without-docker/
-[3]: http://git.sr.ht/~motiejus/undocker
-[4]: https://lists.sr.ht/~motiejus/undocker
+
+[motiejus-comms]: https://jakstys.lt/contact/

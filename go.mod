@@ -1,3 +1,3 @@
-module git.sr.ht/~motiejus/undocker
+module git.jakstys.lt/motiejus/undocker
 
 go 1.16

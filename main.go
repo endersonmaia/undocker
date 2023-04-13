@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"runtime"
 
-	"git.sr.ht/~motiejus/undocker/rootfs"
+	"git.jakstys.lt/motiejus/undocker/rootfs"
 )
 
 var Version = "unknown"

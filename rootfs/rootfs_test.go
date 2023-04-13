@@ -7,7 +7,7 @@ import (
 	"reflect"
 	"testing"
 
-	"git.sr.ht/~motiejus/undocker/rootfs/internal/tartest"
+	"git.jakstys.lt/motiejus/undocker/rootfs/internal/tartest"
 )
 
 type (
