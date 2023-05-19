@@ -79,13 +79,6 @@ Similar Projects
 
 * [rootfs_builder](https://github.com/ForAllSecure/rootfs_builder)
 
-Changelog
----------
-
-**v1.0**
-
-* initial release: `rootfs.Flatten` and a simple command-line application.
-
 Contributions
 -------------
 
