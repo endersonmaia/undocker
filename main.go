@@ -2,6 +2,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -59,10 +60,7 @@ func (c *command) execute(infile string, outfile string) (_err error) {
 		return err
 	}
 	defer func() {
-		err := rd.Close()
-		if _err == nil {
-			_err = err
-		}
+		_err = errors.Join(_err, rd.Close())
 	}()
 
 	var out io.Writer
@@ -74,11 +72,10 @@ func (c *command) execute(infile string, outfile string) (_err error) {
 			return fmt.Errorf("create: %w", err)
 		}
 		defer func() {
-			err := outf.Close()
 			if _err != nil {
-				os.Remove(outfile)
+				_err = errors.Join(_err, os.Remove(outfile))
 			} else {
-				_err = err
+				_err = errors.Join(_err, outf.Close())
 			}
 		}()
 		out = outf

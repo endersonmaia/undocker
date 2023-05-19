@@ -144,11 +144,7 @@ func Flatten(rd io.ReadSeeker, w io.Writer) (_err error) {
 
 	tw := tar.NewWriter(w)
 	defer func() {
-		// Avoiding use of multierr: if error is present, return
-		// that. Otherwise return whatever `Close` returns.
-		if err := tw.Close(); err != nil && _err == nil {
-			_err = err
-		}
+		_err = errors.Join(_err, tw.Close())
 	}()
 	// iterate through all layers, all files, and write files.
 	for i, no := range layers {
