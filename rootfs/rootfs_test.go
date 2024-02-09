@@ -50,15 +50,15 @@ func TestRootFS(t *testing.T) {
 		},
 		{
 			name:    "missing layer",
-			image:   tarball{manifest{"layer0/layer.tar"}},
-			wantErr: "layer0/layer.tar defined in manifest, missing in tarball",
+			image:   tarball{manifest{"blobs/layer0/layer"}},
+			wantErr: "blobs/layer0/layer defined in manifest, missing in tarball",
 		},
 		{
 			name: "basic file overwrite, layer order mixed",
 			image: tarball{
-				file{Name: "layer1/layer.tar", Contents: layer1.Buffer()},
-				file{Name: "layer0/layer.tar", Contents: layer0.Buffer()},
-				manifest{"layer0/layer.tar", "layer1/layer.tar"},
+				file{Name: "blobs/layer1/layer", Contents: layer1.Buffer()},
+				file{Name: "blobs/layer0/layer", Contents: layer0.Buffer()},
+				manifest{"blobs/layer0/layer", "blobs/layer1/layer"},
 			},
 			want: []extractable{
 				dir{Name: "/", UID: 0},
@@ -68,13 +68,13 @@ func TestRootFS(t *testing.T) {
 		{
 			name: "overwrite file with hardlink",
 			image: tarball{
-				file{Name: "layer0/layer.tar", Contents: tarball{
+				file{Name: "blobs/layer0/layer", Contents: tarball{
 					file{Name: "a"},
 				}.Buffer()},
-				file{Name: "layer1/layer.tar", Contents: tarball{
+				file{Name: "blobs/layer1/layer", Contents: tarball{
 					hardlink{Name: "a"},
 				}.Buffer()},
-				manifest{"layer0/layer.tar", "layer1/layer.tar"},
+				manifest{"blobs/layer0/layer", "blobs/layer1/layer"},
 			},
 			want: []extractable{
 				hardlink{Name: "a"},
@@ -83,10 +83,10 @@ func TestRootFS(t *testing.T) {
 		{
 			name: "directory overwrite retains original dir",
 			image: tarball{
-				file{Name: "layer2/layer.tar", Contents: layer2.Buffer()},
-				file{Name: "layer0/layer.tar", Contents: layer0.Buffer()},
-				file{Name: "layer1/layer.tar", Contents: layer1.Buffer()},
-				manifest{"layer0/layer.tar", "layer1/layer.tar", "layer2/layer.tar"},
+				file{Name: "blobs/layer2/layer", Contents: layer2.Buffer()},
+				file{Name: "blobs/layer0/layer", Contents: layer0.Buffer()},
+				file{Name: "blobs/layer1/layer", Contents: layer1.Buffer()},
+				manifest{"blobs/layer0/layer", "blobs/layer1/layer", "blobs/layer2/layer"},
 			},
 			want: []extractable{
 				dir{Name: "/", UID: 0},
@@ -97,17 +97,17 @@ func TestRootFS(t *testing.T) {
 		{
 			name: "simple whiteout",
 			image: tarball{
-				file{Name: "layer0/layer.tar", Contents: tarball{
+				file{Name: "blobs/layer0/layer", Contents: tarball{
 					file{Name: "filea"},
 					file{Name: "fileb"},
 					dir{Name: "dira"},
 					dir{Name: "dirb"},
 				}.Buffer()},
-				file{Name: "layer1/layer.tar", Contents: tarball{
+				file{Name: "blobs/layer1/layer", Contents: tarball{
 					hardlink{Name: ".wh.filea"},
 					hardlink{Name: ".wh.dira"},
 				}.Buffer()},
-				manifest{"layer0/layer.tar", "layer1/layer.tar"},
+				manifest{"blobs/layer0/layer", "blobs/layer1/layer"},
 			},
 			want: []extractable{
 				file{Name: "fileb"},
@@ -117,19 +117,19 @@ func TestRootFS(t *testing.T) {
 		{
 			name: "whiteout with override",
 			image: tarball{
-				file{Name: "layer0/layer.tar", Contents: tarball{
+				file{Name: "blobs/layer0/layer", Contents: tarball{
 					file{Name: "file", Contents: bytes.NewBufferString("from 0")},
 				}.Buffer()},
-				file{Name: "layer1/layer.tar", Contents: tarball{
+				file{Name: "blobs/layer1/layer", Contents: tarball{
 					hardlink{Name: ".wh.file"},
 				}.Buffer()},
-				file{Name: "layer2/layer.tar", Contents: tarball{
+				file{Name: "blobs/layer2/layer", Contents: tarball{
 					file{Name: "file", Contents: bytes.NewBufferString("from 3")},
 				}.Buffer()},
 				manifest{
-					"layer0/layer.tar",
-					"layer1/layer.tar",
-					"layer2/layer.tar",
+					"blobs/layer0/layer",
+					"blobs/layer1/layer",
+					"blobs/layer2/layer",
 				},
 			},
 			want: []extractable{
@@ -139,13 +139,13 @@ func TestRootFS(t *testing.T) {
 		{
 			name: "directories do not whiteout",
 			image: tarball{
-				file{Name: "layer0/layer.tar", Contents: tarball{
+				file{Name: "blobs/layer0/layer", Contents: tarball{
 					dir{Name: "dir"},
 				}.Buffer()},
-				file{Name: "layer1/layer.tar", Contents: tarball{
+				file{Name: "blobs/layer1/layer", Contents: tarball{
 					dir{Name: ".wh.dir"},
 				}.Buffer()},
-				manifest{"layer0/layer.tar", "layer1/layer.tar"},
+				manifest{"blobs/layer0/layer", "blobs/layer1/layer"},
 			},
 			want: []extractable{
 				dir{Name: "dir"},
@@ -155,16 +155,16 @@ func TestRootFS(t *testing.T) {
 		{
 			name: "simple readdir whiteout",
 			image: tarball{
-				file{Name: "layer0/layer.tar", Contents: tarball{
+				file{Name: "blobs/layer0/layer", Contents: tarball{
 					dir{Name: "a"},
 					file{Name: "a/filea"},
 				}.Buffer()},
-				file{Name: "layer1/layer.tar", Contents: tarball{
+				file{Name: "blobs/layer1/layer", Contents: tarball{
 					dir{Name: "a"},
 					file{Name: "a/fileb"},
 					hardlink{Name: "a/.wh..wh..opq"},
 				}.Buffer()},
-				manifest{"layer0/layer.tar", "layer1/layer.tar"},
+				manifest{"blobs/layer0/layer", "blobs/layer1/layer"},
 			},
 			want: []extractable{
 				dir{Name: "a"},
@@ -174,9 +174,9 @@ func TestRootFS(t *testing.T) {
 		{
 			name: "archived layer",
 			image: tarball{
-				file{Name: "layer1/layer.tar", Contents: layer1.Gzip()},
-				file{Name: "layer0/layer.tar", Contents: layer0.Gzip()},
-				manifest{"layer0/layer.tar", "layer1/layer.tar"},
+				file{Name: "blobs/layer1/layer", Contents: layer1.Gzip()},
+				file{Name: "blobs/layer0/layer", Contents: layer0.Gzip()},
+				manifest{"blobs/layer0/layer", "blobs/layer1/layer"},
 			},
 			want: []extractable{
 				dir{Name: "/", UID: 0},

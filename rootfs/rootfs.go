@@ -14,7 +14,7 @@ import (
 
 const (
 	_manifestJSON = "manifest.json"
-	_tarSuffix    = ".tar"
+	_blobPrefix   = "blobs"
 	_whReaddir    = ".wh..wh..opq"
 	_whPrefix     = ".wh."
 )
@@ -64,7 +64,7 @@ func Flatten(rd io.ReadSeeker, w io.Writer) (_err error) {
 			if err := dec.Decode(&manifest); err != nil {
 				return fmt.Errorf("decode %s: %w", _manifestJSON, err)
 			}
-		case strings.HasSuffix(hdr.Name, _tarSuffix):
+		case strings.HasPrefix(hdr.Name, _blobPrefix):
 			here, err := rd.Seek(0, io.SeekCurrent)
 			if err != nil {
 				return err
@@ -72,6 +72,17 @@ func Flatten(rd io.ReadSeeker, w io.Writer) (_err error) {
 			layerOffsets[strings.TrimPrefix(hdr.Name, "./")] = here
 		}
 	}
+
+	filteredLayerOffsets := make(map[string]int64)
+	if len(manifest) != 0 {
+		for _, layer := range manifest[0].Layers {
+			if offset, ok := layerOffsets[layer]; ok {
+				filteredLayerOffsets[layer] = offset
+			}
+		}
+	}
+
+	layerOffsets = filteredLayerOffsets
 
 	if err := validateManifest(layerOffsets, manifest); err != nil {
 		return err
