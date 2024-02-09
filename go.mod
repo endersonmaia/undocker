@@ -1,3 +1,3 @@
 module git.jakstys.lt/motiejus/undocker
 
-go 1.20
+go 1.22
